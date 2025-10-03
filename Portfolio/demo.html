@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./demo.css">
+    <title>DevFolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <script src="https://kit.fontawesome.com/41ffa1005c.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <header class="header">
+        <p class="devfolio">DEVFOLIO</p>
+        <nav class="navbar">
+            <ul class="nav-list">
+                <li class="nav-items"><a href="#">Home</a></li>
+                <li class="nav-items"><a href="#">About</a></li>
+                <li class="nav-items"><a href="#">Projects</a></li>
+                <li class="nav-items"><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="ham">&#9776;</div>
+    </header>
+
+    <main class="main two-column">
+        <section class="main-description">
+            <p class="greet">
+                Hi, I'm Shikhar 👋
+            </p>
+            <p class="changing-title">
+                I'm <span id="dynamic-text"></span>
+            </p>
+            <p class="main-intro">
+                I'm a Computer Science Engineer and full-stack web developer.
+                I love learning new technologies, solving problems, and building
+                impactful projects. I'm always striving to improve and excited to
+                take on new opportunities.
+            </p>
+            <p class="thankyou">THANK YOU !</p>
+            <!-- <p class="main-collab">Collaborate with me on -</p> -->
+            <a href="#" class="main-contact">Contact Me</a>
+        </section>
+        <section class="main-photo">
+            <img class="photo" src="./WhatsApp Image 2025-06-30 at 16.34.50_820c8bd1.jpg" alt="Shikhar's Profile Image">
+        </section>
+    </main>
+
+    <!-- <section class="about">
+        <h1 class="primary-heading">
+            About Me
+        </h1>
+        <p class="intro">
+            I have been learning software development for about two years from now and
+            this journey has given me a lot to learn. Throughout this time period I have
+            developed some hard skills. Currently I am a full stack developer. I'm still
+            parcticing and learning. Trying to make myself better everyday and trying to be
+            a better human bieng.
+            I love problem solving and creativity.
+            So you are welcome to provide me an opportunity.
+        </p>
+    </section> -->
+    <section class="about">
+        <h1 class="primary-heading">About Me</h1>
+        <p class="intro">
+            As an Engineer and passionate learner with curiosity for technology and problem solving,
+            I love creating and building impactful projects.
+        </p>
+        <p>
+            My journey in software development began about two years ago, and since then I've been
+            consistently learning and exploring the tech world. Over time, I have built a strong
+            foundation in web development, and I'm currently also exploring artificial intelligence
+            and machine learning.
+        </p>
+        <p>
+            I enjoy solving problems and turning ideas into real-world implementations. Beyond coding,
+            I believe in lifelong learning — whether that's improving my technical skills, strengthening
+            soft skills, or simply becoming a better human being. As I continue my journey, I look forward
+            to opportunities where I can grow further, contribute to meaningful projects, and collaborate
+            with passionate individuals.
+        </p>
+
+        <section class="skills">
+            <h1>Technical Skills</h1>
+            <ul class="grid-four-columns">
+                <li>
+                    <i class="fa-brands fa-python skill-logo"></i>
+                    <p>
+                        Python was the first programming language I learned back in 9th grade.
+                        It opened the door to software development for me, and today I have a
+                        solid foundation in Python and use it regularly for problem solving and
+                        data analysis.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-brands fa-html5 skill-logo"></i>
+                    <p>
+                        HTML was my entry point into web development. I have practiced it extensively
+                        and continue to refine my knowledge, as it is the backbone of every web project.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-brands fa-css3 skill-logo"></i>
+                    <p>
+                        Along with HTML, I learned CSS to style and design web pages.
+                        I enjoy the creative side of web design and have a strong command
+                        of CSS for building responsive and visually appealing layouts.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-brands fa-square-js skill-logo"></i>
+                    <p>
+                        JavaScript opened a whole new world of possibilities for me.
+                        I use it for both frontend and backend development, creating dynamic
+                        and interactive web applications.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-brands fa-react skill-logo"></i>
+                    <p>
+                        After learning the core web technologies, I started working with React.js
+                        and built several projects that strengthened my understanding of component-based
+                        development and state management.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-brands fa-node skill-logo"></i>
+                    <p>
+                        Moving into backend development, I learned Node.js and Express.js
+                        to build scalable server-side applications and APIs, preparing me for
+                        industry-level development.
+                    </p>
+                </li>
+                <li>
+                    <i class="fa-solid fa-laptop-code skill-logo"></i>
+                    <p>
+                        I am currently improving my C++ skills to become better at problem solving
+                        and competitive programming. I'm also exploring Python libraries like NumPy,
+                        Pandas, and Matplotlib to strengthen my foundations in AI and ML.
+                    </p>
+                </li>
+            </ul>
+        </section>
+    </section>
+
+    <section class="projects">
+        <h1 class="primary-heading">
+            Projects
+        </h1>
+        <section class="project-cards">
+            <div class="cards">
+                <h1>Ecommerce Project</h1>
+                <p>
+                    This is an Ecommerce project built using React and Express.
+                    It is one of my best frontend projects using React.
+                </p>
+                <img src="./images/techno_chip.avif" alt="demo Image">
+            </div>
+            <div class="cards">
+                <h1>Ecommerce Project</h1>
+                <p>
+                    This is an Ecommerce project built using React and Express.
+                    It is one of my best frontend projects using React.
+                </p>
+                <img src="./images/techno_chip.avif" alt="demo Image">
+            </div>
+            <div class="cards">
+                <h1>Ecommerce Project</h1>
+                <p>
+                    This is an Ecommerce project built using React and Express.
+                    It is one of my best frontend projects using React.
+                </p>
+                <img src="./images/techno_chip.avif" alt="demo Image">
+            </div>
+        </section>
+    </section>
+
+    <section class="contacts">
+        <h2 class="primary-heading">📬Get In Touch</h2>
+        <p>Let's build something great together.<br>Feel free to reach out via email or connect with me on social media!
+        </p>
+        <div class="contact-links">
+            <a target="_blank" href="mailto:kaushlendrapratapsingh631@gmail.com" class="btn">
+                <i class="fa-solid fa-square-envelope contact-icon"></i> Email Me
+                <!-- <i class="fa-solid fa-envelope-circle-check"></i> -->
+            </a>
+            <a target="_blank" href="https://www.linkedin.com/in/kps2004/" class="btn">
+                <i class="fa-brands fa-linkedin-in contact-icon"></i> Connect On LinkedIn
+                <!-- <i class="fa-brands fa-square-linkedin"></i> -->
+            </a>
+            <a target="_blank" href="https://github.com/kaushlendra0607" class="btn">
+                <i class="fa-brands fa-github contact-icon"></i> View My GitHub
+            </a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <section class="footer-links">
+            <ul class="footer-page-links">
+                <li><a href="#">Home</a></li><span class="dot">&middot;</span>
+                <li><a href="#">About</a></li><span class="dot">&middot;</span>
+                <li><a href="#">Projects</a></li><span class="dot">&middot;</span>
+                <li><a href="#">Contact</a></li>
+            </ul>
+            <ul class="footer-media-links">
+                <li><a href="#"><i class="fa-brands fa-linkedin-in"></i></a></li>
+                <li><a href="#"><i class="fa-brands fa-github"></i></a></li>
+                <li><a href="#"><i class="fa-brands fa-x-twitter"></i></a></li>
+            </ul>
+        </section>
+        <p>Built with ❤️ using HTML, CSS, and JavaScript.</p>
+        <p>© 2025 Shikhar. All rights reserved.</p>
+    </footer>
+
+</body>
+<script>
+    const words = ["an Engineer", "a Learner", "a Developer"];
+    let i = 0;       // index of word
+    let j = 0;       // index of letter
+    let currentWord = "";
+    let isDeleting = false;
+    const dynamicText = document.getElementById("dynamic-text");
+
+    function typeEffect() {
+        currentWord = words[i];
+
+        if (!isDeleting) {
+            // typing
+            dynamicText.textContent = currentWord.slice(0, ++j);
+            if (j === currentWord.length) {
+                isDeleting = true; 
+                setTimeout(typeEffect, 1500); // pause before deleting
+                return;
+            }
+        } else {
+            // deleting
+            dynamicText.textContent = currentWord.slice(0, --j);
+            if (j === 0) {
+                isDeleting = false;
+                i = (i + 1) % words.length; // move to next word
+            }
+        }
+
+        const speed = isDeleting ? 80 : 120; // faster delete, slower type
+        setTimeout(typeEffect, speed);
+    }
+
+    typeEffect();
+
+</script>
+
+</html>
