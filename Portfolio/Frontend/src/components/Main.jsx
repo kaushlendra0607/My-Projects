@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Profile  from "../assets/profile_pic.jpg"
+import Profile_New from "C:/Users/kaush/OneDrive/Desktop/My_Projects/Portfolio/Gemini_Generated_Image_u19exsu19exsu19e.png"
 
 function Typewriter(){
      const [wordIndex, setWordIndex] = useState(0); // current word
@@ -65,7 +65,7 @@ export function Main() {
                     <a href="#" className="main-contact">Contact Me</a>
                 </section>
                 <section className="main-photo">
-                    <img className="photo" src={Profile} alt="Shikhar's Profile Image"/>
+                    <img className="photo" src={Profile_New} alt="Shikhar's Profile Image"/>
                 </section>
             </main>
         </>
