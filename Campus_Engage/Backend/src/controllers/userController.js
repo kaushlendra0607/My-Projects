@@ -22,12 +22,19 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User already exists!");
     }
     const avatarLocalPath = req.files?.avatar[0]?.path;
+    console.log('[CTRL] request received:', {
+        time: new Date().toISOString(),
+        ip: req.ip,
+        originalname: req.files?.avatar?.[0]?.originalname,
+        path: avatarLocalPath,
+        files: req.files
+    });
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar is required!");
     }
 
     const avatarLoad = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar) {
+    if (!avatarLoad) {
         throw new ApiError(400, "Couldn't upload avatar");
     }
     const userDoc = await userModel.create({
@@ -38,7 +45,7 @@ const registerUser = asyncHandler(async (req, res) => {
         avatar: avatarLoad.secure_url
     });
     const createdUser = await userModel.findById(userDoc._id).select("-password -refreshToken");
-    fs.unlinkSync(avatarLocalPath);
+    // fs.unlinkSync(avatarLocalPath);
     if (!createdUser) throw new ApiError(500, "Something went wrong, User not created");
     return res.status(201).json(new ApiResponse(200, createdUser, "User registered"));
 });

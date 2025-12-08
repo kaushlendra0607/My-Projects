@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/routes.js";
+import userRouter from "./routes/userRouter.js";
 
 const app = express();
 
@@ -18,9 +18,23 @@ app.use(express.static("public"));
 //This tells Express to serve static files (like HTML, CSS, JS, images) from a specific folder — here, "public".
 app.use(cookieParser());
 
-app.use("/api/v1/users", userRouter);
+app.use("/api/users", userRouter);
 console.log("\nServer running on port: ", process.env.CORS_ORIGIN);
-app.use((err, req, res, next) => {
+app.use(async (err, req, res, next) => {
+    // Clean up uploaded files if present
+    if (req.files) {
+        const filesArray = Object.values(req.files).flat();
+        for (let file of filesArray) {
+            try {
+                await fs.promises.unlink(file.path);
+                console.log("[ERROR CLEANUP] deleted:", file.path);
+            } catch (e) {
+                console.log("[ERROR CLEANUP] failed:", file.path, e.message);
+            }
+        }
+    }
+
+    // Send response
     const status = err.statusCode || 500;
 
     console.error("ERROR:", err);
