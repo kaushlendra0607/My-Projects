@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import userModel from "../models/userModel.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import validator from "validator";
-import fs from 'fs';
+import fs, { access } from 'fs';
 
 const registerUser = asyncHandler(async (req, res) => {
     const { fullName, email, userName, password, avatar } = req.body;
@@ -69,4 +69,35 @@ const registerUser = asyncHandler(async (req, res) => {
         }, "User registered"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    if (!validator.isEmail(email)) throw new ApiError(400, "Invalid mail!");
+    const user = await userModel.findOne({email});
+    if (!user) throw new ApiError(404, "User does not exists!");
+    const isPassword = await user.isPasswordCorrect(password);
+    if (!isPassword) throw new ApiError(401, "Incorrect Password!");
+
+    const refreshToken = await user.generateRefreshToken();
+    const accessToken = await user.generateAccessToken();
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production"
+    }
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return res.status(200).cookie("refreshToken", refreshToken, options)
+        .cookie("accesstoken", accessToken, options)
+        .json(new ApiResponse(200, {
+            user: {
+                _id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                userName: user.userName,
+                avatar: user.avatar
+            },
+            refreshToken,
+            accessToken
+        }, "Login successfull!"));
+});
+
+export { registerUser, loginUser };
