@@ -16,6 +16,7 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!validator.isEmail(email)) {
         throw new ApiError(400, "Not a valid mail id");
     }
+    if (password.length < 8) throw new ApiError(400, "Password must have atleast 8 characters!");
 
     const userExists = await userModel.findOne({ $or: [{ email }, { userName }] });
     if (userExists) {
@@ -44,10 +45,28 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         avatar: avatarLoad.secure_url
     });
-    const createdUser = await userModel.findById(userDoc._id).select("-password -refreshToken");
+    const options = { httpOnly: true, secure: process.env.NODE_ENV === "production" }
+    const createdUser = await userModel.findById(userDoc._id);
     // fs.unlinkSync(avatarLocalPath);
     if (!createdUser) throw new ApiError(500, "Something went wrong, User not created");
-    return res.status(201).json(new ApiResponse(200, createdUser, "User registered"));
+    const refreshToken = createdUser.generateRefreshToken();
+    const accessToken = createdUser.generateAccessToken();
+    createdUser.refreshToken = refreshToken;
+    await createdUser.save({ validateBeforeSave: false });
+    return res.status(201)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(new ApiResponse(200, {
+            user: {
+                _id: createdUser._id,
+                fullName: createdUser.fullName,
+                email: createdUser.email,
+                userName: createdUser.userName,
+                avatar: createdUser.avatar
+            },
+            refreshToken,
+            accessToken
+        }, "User registered"));
 });
 
 export { registerUser };
