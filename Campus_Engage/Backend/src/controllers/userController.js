@@ -76,7 +76,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     if (!validator.isEmail(email)) throw new ApiError(400, "Invalid mail!");
-    const user = await userModel.findOne({email});
+    const user = await userModel.findOne({ email });
     if (!user) throw new ApiError(404, "User does not exists!");
     const isPassword = await user.isPasswordCorrect(password);
     if (!isPassword) throw new ApiError(401, "Incorrect Password!");
@@ -105,28 +105,28 @@ const loginUser = asyncHandler(async (req, res) => {
         }, "Login successfull!"));
 });
 
-const logOutUser = asyncHandler(async(req,res)=>{
+const logOutUser = asyncHandler(async (req, res) => {
     await userModel.findOneAndUpdate(
-        {_id:req.user._id},
+        { _id: req.user._id },
         {
-            $unset:{refreshToken:1}
+            $unset: { refreshToken: 1 }
         },
         {
-            new:true
+            new: true
             //by doing new true db returns the updated document otherwise it will return
             //the old document
         }
     );
     const options = {
-        httpOnly:true,
-        secure : process.env.NODE_ENV === "production",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "lax"
         //same site determines the security level of transfer os cookies among different sites
     }
 
-    return res.status(200).clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
-    .json(new ApiResponse(200,{},"User logged out!"));
+    return res.status(200).clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User logged out!"));
 });
 
 export { registerUser, loginUser, logOutUser };

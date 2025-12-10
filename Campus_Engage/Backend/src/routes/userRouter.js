@@ -8,12 +8,14 @@ const userRouter = Router();
 userRouter.post(
     '/register',
     upload.fields([
-        {name:"avatar",
-        maxCount:1}
+        {
+            name: "avatar",
+            maxCount: 1
+        }
     ]),
     registerUser
 );
-userRouter.post('/login',loginUser);
-userRouter.post('/logout',authUser,logOutUser);
+userRouter.post('/login', loginUser);
+userRouter.post('/logout', authUser, logOutUser);
 
 export default userRouter;
