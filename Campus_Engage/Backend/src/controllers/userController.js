@@ -98,7 +98,9 @@ const loginUser = asyncHandler(async (req, res) => {
                 fullName: user.fullName,
                 email: user.email,
                 userName: user.userName,
-                avatar: user.avatar
+                avatar: user.avatar,
+                role: user.role,
+                isDefaultPassword: user.isDefaultPassword
             },
             refreshToken,
             accessToken

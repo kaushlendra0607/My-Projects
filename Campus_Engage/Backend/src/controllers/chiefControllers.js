@@ -6,6 +6,9 @@ import validator from "validator";
 
 
 const loginChief = asyncHandler(async (req, res) => {
+    //we created this controller without paying attention to the fact that/*
+    // only difference in user and chief is of role
+    // so this controller is not being used */
     const { email, password } = req.body;
     if (!validator.isEmail(email)) throw new ApiError(401, "Invalid mail!");
     const userDoc = await userModel.findOne({ email });

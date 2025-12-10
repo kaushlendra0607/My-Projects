@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        required: true
+        required: true,
+        default:"https://cdn-icons-png.flaticon.com/512/149/149071.png"
     },
     password: {
         type: String,
@@ -36,6 +37,10 @@ const userSchema = new mongoose.Schema({
     approvedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
+    },
+    isDefaultPassword:{
+        type:Boolean,
+        default:false
     },
     refreshToken: { type: String }
 
