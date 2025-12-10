@@ -23,13 +23,13 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User already exists!");
     }
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    console.log('[CTRL] request received:', {
-        time: new Date().toISOString(),
-        ip: req.ip,
-        originalname: req.files?.avatar?.[0]?.originalname,
-        path: avatarLocalPath,
-        files: req.files
-    });
+    //console.log('[CTRL] request received:', {
+    //     time: new Date().toISOString(),
+    //     ip: req.ip,
+    //     originalname: req.files?.avatar?.[0]?.originalname,
+    //     path: avatarLocalPath,
+    //     files: req.files
+    // });
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar is required!");
     }

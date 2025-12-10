@@ -8,15 +8,15 @@ v2.config({
 });
 
 const uploadOnCloudinary = async (localFilePath) => {
-    console.log('[CLOUD] start upload:', localFilePath, new Date().toISOString());
+    //console.log('[CLOUD] start upload:', localFilePath, new Date().toISOString());
 
     try {
         if (!localFilePath) return null;
         const response = await v2.uploader.upload(localFilePath, { resource_type: "auto" });
-         console.log('[CLOUD] uploaded OK:', response.url);
+         //console.log('[CLOUD] uploaded OK:', response.url);
         if (fs.existsSync(localFilePath)) {
             fs.unlinkSync(localFilePath);
-             console.log('[CLOUD] deleted file:', localFilePath);
+             //console.log('[CLOUD] deleted file:', localFilePath);
         }
         console.log("File has been uploaded: ", response.url);
         return response;

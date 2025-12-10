@@ -6,7 +6,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const fileName = file.originalname+"-"+Date.now();
-        console.log(`[MULTER] created file: ${fileName} @ ${new Date().toISOString()}`);
+        //console.log(`[MULTER] created file: ${fileName} @ ${new Date().toISOString()}`);
         cb(null, fileName);
     }
 });
