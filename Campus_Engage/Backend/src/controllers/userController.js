@@ -45,7 +45,11 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
         avatar: avatarLoad.secure_url
     });
-    const options = { httpOnly: true, secure: process.env.NODE_ENV === "production" }
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    }
     const createdUser = await userModel.findById(userDoc._id);
     // fs.unlinkSync(avatarLocalPath);
     if (!createdUser) throw new ApiError(500, "Something went wrong, User not created");
@@ -81,7 +85,8 @@ const loginUser = asyncHandler(async (req, res) => {
     const accessToken = await user.generateAccessToken();
     const options = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
     }
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -100,4 +105,28 @@ const loginUser = asyncHandler(async (req, res) => {
         }, "Login successfull!"));
 });
 
-export { registerUser, loginUser };
+const logOutUser = asyncHandler(async(req,res)=>{
+    await userModel.findOneAndUpdate(
+        {_id:req.user._id},
+        {
+            $unset:{refreshToken:1}
+        },
+        {
+            new:true
+            //by doing new true db returns the updated document otherwise it will return
+            //the old document
+        }
+    );
+    const options = {
+        httpOnly:true,
+        secure : process.env.NODE_ENV === "production",
+        sameSite: "lax"
+        //same site determines the security level of transfer os cookies among different sites
+    }
+
+    return res.status(200).clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
+    .json(new ApiResponse(200,{},"User logged out!"));
+});
+
+export { registerUser, loginUser, logOutUser };
