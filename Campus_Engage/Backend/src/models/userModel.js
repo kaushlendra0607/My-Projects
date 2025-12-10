@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, "Password is required!"]
     },
+    role: {
+        type: String,
+        enum: ["USER", "ADMIN", "CHIEF"],
+        default: "USER"
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
     refreshToken: { type: String }
 
 }, { timestamps: true });
