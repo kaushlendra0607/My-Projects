@@ -10,7 +10,7 @@ const authUser = asyncHandler(async (req, res, next) => {
         const decodeToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userDoc = await userModel.findById(decodeToken?._id).select("-password -refreshToken");
         if (!userDoc) throw new ApiError(401, "Invalid Access toke!");
-        req.user = userDoc;//the user method we are adding here is used in log out controller
+        req.user = userDoc;//the user method we are adding here is used in log out controller and others
         next();
     } catch (error) {
         console.error(error);

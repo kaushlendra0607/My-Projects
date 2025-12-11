@@ -140,7 +140,7 @@ const updateUser = asyncHandler(async (req, res) => {
     if (email || userName) {
         const existingUser = await userModel.findOne({
             $or: [
-                { email: email }, 
+                { email: email },
                 { userName: userName }
             ],
             _id: { $ne: req.user._id } // Exclude the current user from check
@@ -165,11 +165,42 @@ const updateUser = asyncHandler(async (req, res) => {
         }
     });
     await userDoc.save({ validateBeforeSave: false });
-    return res.status(200).json(new ApiResponse(200,{
+    return res.status(200).json(new ApiResponse(200, {
         fullName: userDoc.fullName,
         email: userDoc.email,
         userName: userDoc.userName
-    },"Details updated successfully"));
+    }, "Details updated successfully"));
 });
 
-export { registerUser, loginUser, logOutUser, updateUser };
+const changePassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+        throw new ApiError(400, "Old and new passwords are required");
+    }
+    // 2. Find User via Token (Secure)
+    // We assume 'authUser' middleware has run
+    const user = await userModel.findById(req.user._id);
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    // 3. Verify Old Password (Using Schema Method)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "Incorrect old password");
+    }
+    if (oldPassword === newPassword) {
+        throw new ApiError(400, "New password cannot be same as old password");
+    }
+    // 5. Update Password
+    // The pre("save") hook in your schema will automatically HASH this!
+    user.password = newPassword;
+
+    // Fix for Chiefs: If they had a default password, it's no longer default
+    if (user.isDefaultPassword) {
+        user.isDefaultPassword = false;
+    }
+    await user.save({ validateBeforeSave: false });
+    return res.status(200).json(new ApiResponse(200,{},"Password canged successfully"));
+});
+
+export { registerUser, loginUser, logOutUser, updateUser, changePassword };

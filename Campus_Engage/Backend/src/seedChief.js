@@ -24,14 +24,15 @@ const seedChief = async () => {
             return;
         }
 
-        const hashedDefault = await bcrypt.hash(defaultPassword, 10);
+        // const hashedDefault = await bcrypt.hash(defaultPassword, 10);
+        //no need to hash pass here we are already hasing in our schema
 
         for (const chief of initialChiefs) {
             const chiefExists = await userModel.findOne({ email: chief.email });
             if (!chiefExists) {
                 await userModel.create({
                     ...chief,
-                    password: hashedDefault,
+                    password: defaultPassword,
                     isDefaultPassword: true // flag to force change on first login
                 });
                 console.log(`[SEED] Created default Chief: ${chief.email}`);
