@@ -9,7 +9,6 @@ import {
 } from "../controllers/userController.js";
 import { upload } from "../middlewares/multerMiddle.js";
 import authUser from "../middlewares/authUser.js";
-import changePass from "../middlewares/chiefPass.js";
 
 const userRouter = Router();
 

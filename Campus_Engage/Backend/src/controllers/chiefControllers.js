@@ -5,7 +5,8 @@ import { ApiError } from "../utils/ApiError.js";
 import validator from "validator";
 import eventModel from "../models/eventModel.js";
 import fs from "fs";
-import uploadOnCloudinary from "../utils/cloudinary";
+import uploadOnCloudinary from "../utils/cloudinary.js";
+import { EVENT_CATEGORIES } from "../constants.js";
 
 
 const loginChief = asyncHandler(async (req, res) => {
@@ -63,6 +64,9 @@ const createEvent = asyncHandler(async (req, res) => {
         registrationOpenDate,
         registrationCloseDate
     } = req.body;
+    if (!EVENT_CATEGORIES.includes(eventCategory)) {
+        throw new ApiError(401, `Invalid Category! Allowed values are: ${EVENT_CATEGORIES.join(", ")}`);
+    }
 
     // 3. Validation: Check empty fields
     // We create an object so we can check the KEY name for the error message
@@ -130,6 +134,10 @@ const createEvent = asyncHandler(async (req, res) => {
 
     if (categoryClashEvent) {
         throw new ApiError(409, `Time Conflict: Another '${eventCategory}' event is scheduled.`);
+    }
+    if (fs.existsSync(coverLocalPath)) {
+        fs.unlinkSync(coverLocalPath);
+        //console.log('[CLOUD] deleted file:', localFilePath);
     }
 
     // 7. Create Event

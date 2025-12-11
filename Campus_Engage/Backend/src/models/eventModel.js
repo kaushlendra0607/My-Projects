@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { EVENT_CATEGORIES, EVENT_STATUS } from "../constants.js";
 
 const eventSchema = new mongoose.Schema(
     {
@@ -25,17 +26,7 @@ const eventSchema = new mongoose.Schema(
         // 2. Syntax for Fixed Categories (Enum)
         eventCategory: {
             type: String,
-            enum: [
-                "SPORTS",
-                "CULTURAL",
-                "TECHNICAL",
-                "WORKSHOP",
-                "SEMINAR",
-                "LITERARY",
-                "ART",
-                "MUSIC",
-                "ESPORTS"
-            ],
+            enum: EVENT_CATEGORIES,
             required: true,
             index: true, // 3. Indexing here for Filtering
         },
@@ -72,7 +63,21 @@ const eventSchema = new mongoose.Schema(
         },
         isPublished: {
             type: Boolean,
-            default: true, // Admin can draft events without showing them
+            default: true // Admin can draft events without showing them
+        },
+        // 1. TRACKING STATUS (The History Logic)
+        status: {
+            type: String,
+            enum: EVENT_STATUS,
+            default: "UPCOMING"
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
         }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt

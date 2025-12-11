@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/userRouter.js";
+import eventRouter from "./routes/eventRouter.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use("/api/users", userRouter);
+app.use('/api/event',eventRouter);
 console.log("\nServer running on port: ", process.env.CORS_ORIGIN);
 app.use(async (err, req, res, next) => {
     // Clean up uploaded files if present

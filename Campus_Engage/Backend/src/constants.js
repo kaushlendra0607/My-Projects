@@ -1,1 +1,7 @@
 export const DB_NAME = "Campus_Engage";
+
+export const EVENT_CATEGORIES = ["TECH", "CULTURAL", "SPORTS", "ACADEMIC", "WORKSHOP"];
+
+export const EVENT_STATUS = ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"];
+
+export const REGISTRATION_STATUS = ["REGISTERED", "ATTENDED", "ABSENT", "CANCELLED"];
