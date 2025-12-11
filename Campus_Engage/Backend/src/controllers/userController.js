@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import userModel from "../models/userModel.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import uploadOnCloudinary from "../utils/cloudinary.js";
 import validator from "validator";
 import fs, { access } from 'fs';
 
@@ -131,4 +131,45 @@ const logOutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User logged out!"));
 });
 
-export { registerUser, loginUser, logOutUser };
+const updateUser = asyncHandler(async (req, res) => {
+    const { fullName, userName, email } = req.body;
+    if (!fullName && !userName && !email) throw new ApiError(400, "Atleast give one field to change");
+    const userDoc = await userModel.findById(req.user._id).select("-password");
+    // 4. DUPLICATE CHECK (Critical Step)
+    // If they are changing email or username, check if it's taken by someone else
+    if (email || userName) {
+        const existingUser = await userModel.findOne({
+            $or: [
+                { email: email }, 
+                { userName: userName }
+            ],
+            _id: { $ne: req.user._id } // Exclude the current user from check
+        });
+
+        if (existingUser) {
+            throw new ApiError(409, "Email or Username already exists!");
+        }
+    }
+    if (email && !validator.isEmail(email)) throw new ApiError(401, "Invalid mail");
+    // 5. Dynamic Update Logic
+    // We create a map of "Key Name" -> "New Value"
+    const updates = { fullName, userName, email };
+    // We iterate over the KEYS ("fullName", "email", etc.)
+    Object.keys(updates).forEach((key) => {
+        const newValue = updates[key];
+        // Only update if:
+        // A. The user sent a value (newValue exists)
+        // B. The value is DIFFERENT from what is in DB
+        if (newValue && newValue.trim() !== "" && newValue !== userDoc[key]) {
+            userDoc[key] = newValue; // Bracket notation updates the correct field
+        }
+    });
+    await userDoc.save({ validateBeforeSave: false });
+    return res.status(200).json(new ApiResponse(200,{
+        fullName: userDoc.fullName,
+        email: userDoc.email,
+        userName: userDoc.userName
+    },"Details updated successfully"));
+});
+
+export { registerUser, loginUser, logOutUser, updateUser };
