@@ -160,4 +160,80 @@ const createEvent = asyncHandler(async (req, res) => {
     );
 });
 
-export { loginChief, createEvent };
+const getAllEvents = asyncHandler(async (req, res) => {
+    const {
+        page = 1,
+        limit = 10,
+        query,
+        category,
+        show = "upcoming"
+    } = req.query;
+
+    const matchStage = { isDeleted: false };
+    const now = new Date();
+
+    // 1. Filter Logic
+    if (show === "upcoming") {
+        matchStage.eventEndDateTime = { $gt: now };
+    } else if (show === "history") {
+        matchStage.eventEndDateTime = { $lte: now };
+    }
+
+    if (query) {
+        matchStage.eventName = { $regex: query, $options: "i" };
+    }
+
+    if (category) {
+        matchStage.eventCategory = category;
+    }
+
+    // 2. Aggregation Pipeline
+    const events = await eventModel.aggregate([
+        { $match: matchStage },
+        {
+            $lookup: {
+                from: "registers",
+                localField: "_id",
+                foreignField: "event",
+                as: "registrations"
+            }
+        },
+        {
+            $addFields: {
+                participantsCount: { $size: "$registrations" },
+
+                // --- REFINED LOGIC FOR UNLIMITED ---
+                isFull: {
+                    $cond: {
+                        if: { $eq: ["$maxParticipants", 0] }, // Is limit 0?
+                        then: false,                          // Then it's never full (Unlimited)
+                        else: {
+                            $gte: [{ $size: "$registrations" }, "$maxParticipants"]
+                        }                                     // Else check the limit
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                registrations: 0
+            }
+        },
+        {
+            $sort: {
+                eventStartDateTime: show === "history" ? -1 : 1
+            }
+        },
+        { $skip: (parseInt(page) - 1) * parseInt(limit) },
+        { $limit: parseInt(limit) }
+    ]);
+
+    const totalEvents = await eventModel.countDocuments(matchStage);
+
+    return res.status(200).json(
+        new ApiResponse(200, { events, totalEvents }, "Events fetched successfully")
+    );
+});
+
+
+export { loginChief, createEvent, getAllEvents };

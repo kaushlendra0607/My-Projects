@@ -49,7 +49,7 @@ const eventSchema = new mongoose.Schema(
             required: true,
         },
         // 6. Additional "Smart" Fields
-        price: {
+        registrationFee: {
             type: Number,
             default: 0, // 0 means free
         },

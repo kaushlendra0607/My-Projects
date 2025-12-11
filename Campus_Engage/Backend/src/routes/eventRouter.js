@@ -3,7 +3,7 @@ import authUser from "../middlewares/authUser.js";
 import { verifyRole } from "../middlewares/authRole.js";
 import requirePasswordChange from "../middlewares/chiefPass.js";
 import { upload } from "../middlewares/multerMiddle.js";
-import { createEvent } from "../controllers/chiefControllers.js";
+import { createEvent, getAllEvents } from "../controllers/chiefControllers.js";
 
 const eventRouter = express.Router();
 
@@ -15,5 +15,6 @@ eventRouter.post(
     upload.single("coverImage"),
     createEvent
 );
+eventRouter.get('/',getAllEvents);
 
 export default eventRouter;
