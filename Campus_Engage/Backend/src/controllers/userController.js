@@ -200,7 +200,27 @@ const changePassword = asyncHandler(async (req, res) => {
         user.isDefaultPassword = false;
     }
     await user.save({ validateBeforeSave: false });
-    return res.status(200).json(new ApiResponse(200,{},"Password canged successfully"));
+    return res.status(200).json(new ApiResponse(200, {}, "Password canged successfully"));
 });
 
-export { registerUser, loginUser, logOutUser, updateUser, changePassword };
+const updateAvatar = asyncHandler(async (req, res) => {
+    const user = await userModel.findById(req.user._id);
+    if (!user) throw new ApiError(401, "User not found");
+    // 1. Check for File (Use req.file for single uploads)
+    const avatarLocalPath = req.file?.path;
+    if (!avatarLocalPath) throw new ApiError(400, "No file path found");
+    const avatarLoad = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatarLoad) throw new ApiError(501, "Couldn't upload avatar");
+    user.avatar = avatarLoad.secure_url;
+    await user.save({ validateBeforeSave: false });
+    return res.status(200).json(new ApiResponse(200, user, "Avatar Updated"));
+});
+
+export {
+    registerUser,
+    loginUser,
+    logOutUser,
+    updateUser,
+    changePassword,
+    updateAvatar
+};

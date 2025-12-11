@@ -1,5 +1,12 @@
 import { Router } from "express";
-import { changePassword, loginUser, logOutUser, registerUser, updateUser } from "../controllers/userController.js";
+import {
+    changePassword,
+    loginUser,
+    logOutUser,
+    registerUser,
+    updateAvatar,
+    updateUser
+} from "../controllers/userController.js";
 import { upload } from "../middlewares/multerMiddle.js";
 import authUser from "../middlewares/authUser.js";
 import changePass from "../middlewares/chiefPass.js";
@@ -20,5 +27,6 @@ userRouter.post('/login', loginUser);
 userRouter.post('/logout', authUser, logOutUser);
 userRouter.route('/update-account').patch(authUser,updateUser);
 userRouter.post('/change-password',authUser,changePassword);
+userRouter.patch('/update-avatar',authUser,upload.single("avatar"),updateAvatar);
 
 export default userRouter;
