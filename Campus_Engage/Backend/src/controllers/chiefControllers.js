@@ -235,5 +235,72 @@ const getAllEvents = asyncHandler(async (req, res) => {
     );
 });
 
+const updateEvent = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
 
-export { loginChief, createEvent, getAllEvents };
+    // 1. Check if Event Exists FIRST
+    const event = await eventModel.findById(eventId);
+    if (!event) {
+        throw new ApiError(404, "Event not found");
+    }
+
+    // 2. Identify what is being updated (Filter out undefined fields)
+    const updates = {};
+    const allowedFields = [
+        "eventName", "description", "venue", "eventCategory",
+        "eventStartDateTime", "eventEndDateTime",
+        "registrationOpenDate", "registrationCloseDate",
+        "registrationFee", "maxParticipants", "status"
+    ];
+
+    // Loop through allowed fields. If present in req.body, add to updates object.
+    allowedFields.forEach((field) => {
+        if (req.body[field] !== undefined && req.body[field] !== "") {
+            updates[field] = req.body[field];
+        }
+    });
+
+    // 3. Handle Image Separate Logic
+    if (req.file) {
+        const uploadResponse = await uploadOnCloudinary(req.file.path);
+        if (!uploadResponse) {
+            throw new ApiError(500, "Failed to upload new image");
+        }
+        updates.coverImage = uploadResponse.secure_url;
+        // Optional: Add logic to delete old image here
+    }
+
+    // 4. CHECK: Is there anything to update?
+    // If 'updates' object has 0 keys, user sent nothing.
+    if (Object.keys(updates).length === 0) {
+        throw new ApiError(400, "No fields provided to update");
+    }
+
+    // 5. Special Validation Logic: Dates
+    // If user is trying to update dates, we must ensure integrity
+    // We mix 'updates' with 'event' (existing data) to check the final result
+    if (updates.eventStartDateTime || updates.eventEndDateTime || updates.registrationOpenDate || updates.registrationCloseDate) {
+        const newStart = new Date(updates.eventStartDateTime || event.eventStartDateTime);
+        const newEnd = new Date(updates.eventEndDateTime || event.eventEndDateTime);
+        const newRegOpen = new Date(updates.registrationOpenDate || event.registrationOpenDate);
+        const newRegClose = new Date(updates.registrationCloseDate || event.registrationCloseDate);
+
+        if (newEnd <= newStart || newRegClose <= newRegOpen || newStart <= newRegClose) {
+            throw new ApiError(400, "Dates are not set properly");
+        }
+    }
+
+    // 6. Perform the Update
+    // Since 'updates' only contains changed fields, MongoDB only updates those.
+    const updatedEvent = await eventModel.findByIdAndUpdate(
+        eventId,
+        { $set: updates },
+        { new: true }
+    );
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedEvent, "Event updated successfully")
+    );
+});
+
+export { loginChief, createEvent, getAllEvents, updateEvent };
