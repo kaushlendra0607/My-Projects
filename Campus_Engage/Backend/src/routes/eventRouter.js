@@ -3,7 +3,7 @@ import authUser from "../middlewares/authUser.js";
 import { verifyRole } from "../middlewares/authRole.js";
 import requirePasswordChange from "../middlewares/chiefPass.js";
 import { upload } from "../middlewares/multerMiddle.js";
-import { cancelEvent, createEvent, deleteEvent, getAllEvents, getEventById, updateEvent } from "../controllers/chiefControllers.js";
+import { cancelEvent, createEvent, deleteEvent, getAllEvents, getEventById, registerForEvent, updateEvent } from "../controllers/chiefControllers.js";
 
 const eventRouter = express.Router();
 
@@ -15,14 +15,20 @@ eventRouter.post(
     upload.single("coverImage"),
     createEvent
 );
+
+
 eventRouter.get('/',getAllEvents);
+
+
 eventRouter.route('/:eventId').patch(
     authUser,
     verifyRole("ADMIN","CHIEF"),
     requirePasswordChange,
     upload.single("coverImage"),
     updateEvent
-).get(getEventById)
+).get(getEventById);
+
+
 eventRouter.patch(
     '/cancel/:eventId',
     authUser,
@@ -30,12 +36,16 @@ eventRouter.patch(
     requirePasswordChange,
     cancelEvent
 );
+
+
 eventRouter.patch(
     '/delete/:eventId',
     authUser,
     verifyRole("ADMIN","CHIEF"),
     requirePasswordChange,
     deleteEvent
-)
+);
+
+eventRouter.post('/:eventId/register',authUser,registerForEvent);
 
 export default eventRouter;

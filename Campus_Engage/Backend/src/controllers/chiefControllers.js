@@ -7,6 +7,8 @@ import eventModel from "../models/eventModel.js";
 import fs from "fs";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import { EVENT_CATEGORIES } from "../constants.js";
+import registrationModel from "../models/registrationModel.js";
+import crypto from "crypto";
 
 
 const loginChief = asyncHandler(async (req, res) => {
@@ -405,6 +407,74 @@ const getEventById = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, eventDoc, "Successfully fetched events"));
 });
 
+const registerForEvent = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const userId = req.user._id;
+
+    // 1. Fetch Event
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new ApiError(404, "Event not found");
+
+    // 2. Sanity Checks: Cancelled or Deleted?
+    if (event.isCancelled || event.isDeleted) {
+        throw new ApiError(400, "Cannot register for a cancelled or deleted event.");
+    }
+
+    // 3. Date Checks
+    const now = new Date();
+    // Use the stored dates directly
+    if (event.registrationCloseDate && now > event.registrationCloseDate) {
+        throw new ApiError(400, "Registration for this event has closed.");
+    }
+    if (now >= event.eventStartDateTime) {
+        throw new ApiError(400, "Event has already started.");
+    }
+
+    // 4. Duplicate Check (CRITICAL)
+    // Check if this user is already registered for this specific event
+    const existingRegistration = await registrationModel.findOne({
+        event: eventId,
+        user: userId
+    });
+    if (existingRegistration) {
+        throw new ApiError(409, "You are already registered for this event.");
+    }
+
+    // 5. Max Participants Check (Capacity)
+    // Only check if maxParticipants is > 0 (assuming 0 means unlimited)
+    if (event.maxParticipants > 0 && event.participantsCount >= event.maxParticipants) {
+        throw new ApiError(400, "Event is fully booked.");
+    }
+
+    // 6. Generate Unique Ticket ID (For Attendance)
+    // Format: EV-UserLast4-RandomHex (e.g., EV-8A2B-9F22)
+    const uniqueSuffix = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const ticketId = `TICKET-${uniqueSuffix}`;
+
+    // 7. Create Registration
+    const registration = await registrationModel.create({
+        event: eventId,
+        user: userId,
+        ticketId: ticketId,
+        paymentStatus: event.price > 0 ? "PENDING" : "CONFIRMED", // Future proofing
+        attendanceStatus: "ABSENT" // Default status
+    });
+
+    if (!registration) {
+        throw new ApiError(500, "Something went wrong while registering.");
+    }
+
+    // 8. Increment Participant Count on Event (Atomic Update)
+    // We use $inc to ensure accuracy even if 2 people register at the exact same millisecond
+    await eventModel.findByIdAndUpdate(eventId, {
+        $inc: { participantsCount: 1 }
+    });
+
+    return res.status(201).json(
+        new ApiResponse(201, registration, "Registration successful.")
+    );
+});
+
 export {
     loginChief,
     createEvent,
@@ -412,5 +482,6 @@ export {
     updateEvent,
     cancelEvent,
     deleteEvent,
-    getEventById
+    getEventById,
+    registerForEvent
 };
