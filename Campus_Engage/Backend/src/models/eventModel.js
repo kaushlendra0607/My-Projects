@@ -65,12 +65,6 @@ const eventSchema = new mongoose.Schema(
             type: Boolean,
             default: true // Admin can draft events without showing them
         },
-        // 1. TRACKING STATUS (The History Logic)
-        status: {
-            type: String,
-            enum: EVENT_STATUS,
-            default: "UPCOMING"
-        },
         isDeleted: {
             type: Boolean,
             default: false
@@ -78,10 +72,36 @@ const eventSchema = new mongoose.Schema(
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
+        },
+        isCancelled: {
+            type: Boolean,
+            default: false
+        },
+        expireAt: {
+            type: Date,
+            default: null, // If null, it won't be deleted
+            index: { expires: 0 } // THIS IS THE MAGIC
         }
     },
-    { timestamps: true } // Automatically adds createdAt and updatedAt
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } } // Automatically adds createdAt and updatedAt
 );
+
+// THE MAGIC: A Virtual Field
+// This calculates the status automatically every time you fetch the event
+eventSchema.virtual('status').get(function () {
+    const now = new Date();
+
+    if (this.isCancelled) {
+        return EVENT_STATUS.CANCELLED;
+    }
+    if (now < this.eventStartDateTime) {
+        return EVENT_STATUS.UPCOMING;
+    }
+    if (now >= this.eventStartDateTime && now <= this.eventEndDateTime) {
+        return EVENT_STATUS.ONGOING;
+    }
+    return EVENT_STATUS.COMPLETED;
+});
 
 const eventModel = mongoose.models.Event || mongoose.model("Event", eventSchema);
 

@@ -97,6 +97,8 @@ const createEvent = asyncHandler(async (req, res) => {
     const now = new Date();
     /* not using date.now here bcz it doesnt gives us object
     Get current time as Date object for comparison*/
+    const threeMonthsLater = new Date(end);
+    threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
 
     // 5. Logical Date Validation
     if (end <= start) throw new ApiError(400, "Event cannot end before it starts!");
@@ -152,12 +154,40 @@ const createEvent = asyncHandler(async (req, res) => {
         registrationCloseDate: regClose,
         coverImage: coverImageUpload.secure_url,// Use the Cloudinary URL
         // If you are tracking who created it:
-        createdBy: req.user._id
+        createdBy: req.user._id,
+        expireAt : threeMonthsLater
     });
 
     return res.status(201).json(
         new ApiResponse(201, newEvent, "Event created successfully")
     );
+});
+
+const cancelEvent = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const eventDoc = await eventModel.findById(eventId);
+    if (!eventDoc) throw new ApiError(400, "Event doesnt exists");
+    eventDoc.isCancelled = true;
+    await eventDoc.save();
+
+    return res.status(200).json(new ApiResponse(200, eventDoc, "Event cancelled!"));
+
+});
+const deleteEvent = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const eventDoc = await eventModel.findById(eventId);
+    if(!eventDoc) throw new ApiError(400,"Event not found");
+    const present = new Date();
+    if(eventDoc.eventEndDateTime>present && eventDoc.eventStartDateTime<=present){
+        throw new ApiError(402,"You can't delete ongoing event");
+    }
+    eventDoc.isDeleted = true;
+    // 2. OVERWRITE the expiry date to 10 days from NOW
+    const tenDaysFromNow = new Date();
+    tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
+    eventDoc.expireAt = tenDaysFromNow;
+    await eventDoc.save();
+    return res.status(200).json(new ApiResponse(200,eventDoc,"Soft deleted, will be deleted permanently after 10 days"));
 });
 
 const getAllEvents = asyncHandler(async (req, res) => {
@@ -280,13 +310,32 @@ const updateEvent = asyncHandler(async (req, res) => {
     // If user is trying to update dates, we must ensure integrity
     // We mix 'updates' with 'event' (existing data) to check the final result
     if (updates.eventStartDateTime || updates.eventEndDateTime || updates.registrationOpenDate || updates.registrationCloseDate) {
+        // 1. Merge existing data with updates to get the full picture
         const newStart = new Date(updates.eventStartDateTime || event.eventStartDateTime);
         const newEnd = new Date(updates.eventEndDateTime || event.eventEndDateTime);
         const newRegOpen = new Date(updates.registrationOpenDate || event.registrationOpenDate);
         const newRegClose = new Date(updates.registrationCloseDate || event.registrationCloseDate);
 
-        if (newEnd <= newStart || newRegClose <= newRegOpen || newStart <= newRegClose) {
-            throw new ApiError(400, "Dates are not set properly");
+        // 2. Validate: Event Duration
+        if (newEnd <= newStart) {
+            throw new ApiError(400, "Event End time must be after Start time.");
+        }
+
+        // 3. Validate: Registration Duration
+        if (newRegClose <= newRegOpen) {
+            throw new ApiError(400, "Registration Close time must be after Open time.");
+        }
+
+        // 4. Validate: Registration vs Event Logic
+        // CHANGE: Changed '<=' to '<' to allow reg to close exactly when event starts
+        // OPTIONAL: If you allow onsite reg, remove this check entirely.
+        if (newStart < newRegClose) {
+            throw new ApiError(400, "Registration cannot close after the event has started.");
+        }
+
+        // 5. Validate: Registration shouldn't open after event ends (Sanity check)
+        if (newRegOpen >= newEnd) {
+            throw new ApiError(400, "Registration cannot open after the event has ended.");
         }
     }
 
@@ -303,4 +352,19 @@ const updateEvent = asyncHandler(async (req, res) => {
     );
 });
 
-export { loginChief, createEvent, getAllEvents, updateEvent };
+const getEventById = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const eventDoc = await eventModel.findById(eventId);
+    if (!eventDoc) throw new ApiError(400, "Event not found, either it never happend or its been more than 3 months!");
+    return res.status(200).json(new ApiResponse(200,eventDoc,"Successfully fetched events"));
+});
+
+export {
+    loginChief,
+    createEvent,
+    getAllEvents,
+    updateEvent,
+    cancelEvent,
+    deleteEvent,
+    getEventById
+};
