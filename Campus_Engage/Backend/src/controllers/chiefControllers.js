@@ -155,7 +155,7 @@ const createEvent = asyncHandler(async (req, res) => {
         coverImage: coverImageUpload.secure_url,// Use the Cloudinary URL
         // If you are tracking who created it:
         createdBy: req.user._id,
-        expireAt : threeMonthsLater
+        expireAt: threeMonthsLater
     });
 
     return res.status(201).json(
@@ -176,10 +176,10 @@ const cancelEvent = asyncHandler(async (req, res) => {
 const deleteEvent = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const eventDoc = await eventModel.findById(eventId);
-    if(!eventDoc) throw new ApiError(400,"Event not found");
+    if (!eventDoc) throw new ApiError(400, "Event not found");
     const present = new Date();
-    if(eventDoc.eventEndDateTime>present && eventDoc.eventStartDateTime<=present){
-        throw new ApiError(402,"You can't delete ongoing event");
+    if (eventDoc.eventEndDateTime > present && eventDoc.eventStartDateTime <= present) {
+        throw new ApiError(402, "You can't delete ongoing event");
     }
     eventDoc.isDeleted = true;
     // 2. OVERWRITE the expiry date to 10 days from NOW
@@ -187,7 +187,7 @@ const deleteEvent = asyncHandler(async (req, res) => {
     tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
     eventDoc.expireAt = tenDaysFromNow;
     await eventDoc.save();
-    return res.status(200).json(new ApiResponse(200,eventDoc,"Soft deleted, will be deleted permanently after 10 days"));
+    return res.status(200).json(new ApiResponse(200, eventDoc, "Soft deleted, will be deleted permanently after 10 days"));
 });
 
 const getAllEvents = asyncHandler(async (req, res) => {
@@ -196,72 +196,118 @@ const getAllEvents = asyncHandler(async (req, res) => {
         limit = 10,
         query,
         category,
-        show = "upcoming"
+        status: rawStatus = "UPCOMING" // Default to UPCOMING if nothing sent
     } = req.query;
+    const status = rawStatus.toUpperCase();
 
     const matchStage = { isDeleted: false };
     const now = new Date();
 
-    // 1. Filter Logic
-    if (show === "upcoming") {
-        matchStage.eventEndDateTime = { $gt: now };
-    } else if (show === "history") {
-        matchStage.eventEndDateTime = { $lte: now };
+    // Dynamic Sort Options
+    let sortStage = { eventStartDateTime: 1 }; // Default: Ascending (soonest first)
+
+    // --- 1. BUILD MATCH STAGE BASED ON STATUS ---
+    // This replaces the old 'show' logic completely
+    switch (status) {
+        case 'UPCOMING':
+            matchStage.eventStartDateTime = { $gt: now };
+            matchStage.isCancelled = false;
+            sortStage = { eventStartDateTime: 1 }; // Show soonest upcoming first
+            break;
+
+        case 'ONGOING':
+            matchStage.eventStartDateTime = { $lte: now }; // Started in past
+            matchStage.eventEndDateTime = { $gte: now };   // Ends in future
+            matchStage.isCancelled = false;
+            sortStage = { eventEndDateTime: 1 }; // Show those ending soonest first
+            break;
+
+        case 'COMPLETED':
+            matchStage.eventEndDateTime = { $lt: now };
+            matchStage.isCancelled = false;
+            sortStage = { eventEndDateTime: -1 }; // Show most recently finished first
+            break;
+
+        case 'CANCELLED':
+            matchStage.isCancelled = true;
+            sortStage = { updatedAt: -1 }; // Show most recently cancelled first
+            break;
+
+        default:
+            // Fallback: If someone sends invalid status, decide what to show.
+            // Safe bet: Show all non-cancelled, non-deleted events?
+            // Or just default to UPCOMING logic above.
+            matchStage.isCancelled = false;
+            break;
     }
 
+    // --- 2. SEARCH FILTERS ---
     if (query) {
         matchStage.eventName = { $regex: query, $options: "i" };
     }
 
     if (category) {
-        matchStage.eventCategory = category;
+        matchStage.eventCategory = { $regex: `^${category}$`, $options: "i" };
     }
 
-    // 2. Aggregation Pipeline
+    // --- 3. AGGREGATION PIPELINE ---
     const events = await eventModel.aggregate([
+        // A. Filter first (Efficiency)
         { $match: matchStage },
+
+        // B. Lookup Registrations (The "Costly" part, but fine for 10k users)
         {
             $lookup: {
-                from: "registers",
+                from: "registers",       // Ensure this matches your collection name exactly in MongoDB
                 localField: "_id",
                 foreignField: "event",
                 as: "registrations"
             }
         },
+
+        // C. Calculate Counts & isFull
         {
             $addFields: {
                 participantsCount: { $size: "$registrations" },
-
-                // --- REFINED LOGIC FOR UNLIMITED ---
                 isFull: {
                     $cond: {
-                        if: { $eq: ["$maxParticipants", 0] }, // Is limit 0?
-                        then: false,                          // Then it's never full (Unlimited)
+                        if: { $eq: ["$maxParticipants", 0] }, // If 0, Unlimited
+                        then: false,
                         else: {
                             $gte: [{ $size: "$registrations" }, "$maxParticipants"]
-                        }                                     // Else check the limit
+                        }
                     }
                 }
             }
         },
+
+        // D. Cleanup (Remove heavy registration array)
         {
             $project: {
                 registrations: 0
             }
         },
-        {
-            $sort: {
-                eventStartDateTime: show === "history" ? -1 : 1
-            }
-        },
+
+        // E. Sort & Pagination
+        { $sort: sortStage },
         { $skip: (parseInt(page) - 1) * parseInt(limit) },
         { $limit: parseInt(limit) }
     ]);
 
+    // --- 4. COUNT TOTAL (For Frontend Pagination) ---
+    // We count based on the *Filter*, not the pipeline result
     const totalEvents = await eventModel.countDocuments(matchStage);
 
     return res.status(200).json(
-        new ApiResponse(200, { events, totalEvents }, "Events fetched successfully")
+        new ApiResponse(200, {
+            events,
+            meta: {
+                total: totalEvents,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(totalEvents / limit)
+            }
+        }, "Events fetched successfully")
     );
 });
 
@@ -356,7 +402,7 @@ const getEventById = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const eventDoc = await eventModel.findById(eventId);
     if (!eventDoc) throw new ApiError(400, "Event not found, either it never happend or its been more than 3 months!");
-    return res.status(200).json(new ApiResponse(200,eventDoc,"Successfully fetched events"));
+    return res.status(200).json(new ApiResponse(200, eventDoc, "Successfully fetched events"));
 });
 
 export {
