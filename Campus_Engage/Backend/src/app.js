@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/userRouter.js";
 import eventRouter from "./routes/eventRouter.js";
+import fs from "fs";
 
 const app = express();
 
@@ -20,18 +21,34 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use("/api/users", userRouter);
-app.use('/api/event',eventRouter);
+app.use('/api/event', eventRouter);
 console.log("\nServer running on port: ", process.env.CORS_ORIGIN);
 app.use(async (err, req, res, next) => {
     // Clean up uploaded files if present
+    // 1. Collect all files (Single or Multiple)
+    let filesToDelete = [];
+
     if (req.files) {
-        const filesArray = Object.values(req.files).flat();
-        for (let file of filesArray) {
+        // Handle upload.fields() or upload.array()
+        filesToDelete = Object.values(req.files).flat();
+    } else if (req.file) {
+        // Handle upload.single()
+        filesToDelete = [req.file];
+    }
+
+    // 2. Iterate and Delete
+    if (filesToDelete.length > 0) {
+        for (let file of filesToDelete) {
             try {
+                // Check if file still exists before trying to delete (avoid double-delete errors)
+                await fs.promises.access(file.path);
                 await fs.promises.unlink(file.path);
                 console.log("[ERROR CLEANUP] deleted:", file.path);
             } catch (e) {
-                console.log("[ERROR CLEANUP] failed:", file.path, e.message);
+                // If code is ENOENT, it means file was already deleted (good!)
+                if (e.code !== 'ENOENT') {
+                    console.log("[ERROR CLEANUP] failed:", file.path, e.message);
+                }
             }
         }
     }
