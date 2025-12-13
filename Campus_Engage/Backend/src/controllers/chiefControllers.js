@@ -99,8 +99,8 @@ const createEvent = asyncHandler(async (req, res) => {
     const now = new Date();
     /* not using date.now here bcz it doesnt gives us object
     Get current time as Date object for comparison*/
-    const threeMonthsLater = new Date(end);
-    threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+    const retentionPeriod = new Date(end);
+    retentionPeriod.setFullYear(retentionPeriod.getFullYear() + 5);
 
     // 5. Logical Date Validation
     if (end <= start) throw new ApiError(400, "Event cannot end before it starts!");
@@ -157,7 +157,7 @@ const createEvent = asyncHandler(async (req, res) => {
         coverImage: coverImageUpload.secure_url,// Use the Cloudinary URL
         // If you are tracking who created it:
         createdBy: req.user._id,
-        expireAt: threeMonthsLater
+        expireAt: retentionPeriod
     });
 
     return res.status(201).json(
