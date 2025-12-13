@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { REGISTRATION_STATUS } from "../constants.js";
+import { REGISTRATION_STATUS, PAYMENT_STATUS } from "../constants.js";
 
 const regSchema = new mongoose.Schema({
     event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
@@ -25,8 +25,21 @@ const regSchema = new mongoose.Schema({
     // FOR FUTURE PAYMENTS
     paymentStatus: {
         type: String,
-        enum: ["PENDING", "CONFIRMED", "FAILED"],
-        default: "CONFIRMED"
+        enum: PAYMENT_STATUS,
+        default: "PENDING"
+    },
+    certificateUrl: {
+        type: String, // Cloudinary URL
+        default: ""
+    },
+    // 2. Feedback (User provides this after event)
+    feedback: {
+        rating: { type: Number, min: 1, max: 5 },
+        comment: { type: String, maxlength: 500 }
+    },
+    canCancel:{
+        type:Boolean,
+        default:true
     }
 }, { timestamps: true });
 // Compound index to ensure one user can't register twice for the same event

@@ -66,6 +66,9 @@ const createEvent = asyncHandler(async (req, res) => {
         registrationOpenDate,
         registrationCloseDate
     } = req.body;
+    if(eventCategory){
+        eventCategory = eventCategory.toUpperCase();
+    }
     if (!EVENT_CATEGORIES.includes(eventCategory)) {
         throw new ApiError(401, `Invalid Category! Allowed values are: ${EVENT_CATEGORIES.join(", ")}`);
     }
@@ -181,13 +184,14 @@ const deleteEvent = asyncHandler(async (req, res) => {
     if (!eventDoc) throw new ApiError(400, "Event not found");
     const present = new Date();
     if (eventDoc.eventEndDateTime > present && eventDoc.eventStartDateTime <= present) {
-        throw new ApiError(402, "You can't delete ongoing event");
+        throw new ApiError(400, "You can't delete ongoing event");
     }
     eventDoc.isDeleted = true;
     // 2. OVERWRITE the expiry date to 10 days from NOW
     const tenDaysFromNow = new Date();
     tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
     eventDoc.expireAt = tenDaysFromNow;
+    await registrationModel.deleteMany({ event: eventId });
     await eventDoc.save();
     return res.status(200).json(new ApiResponse(200, eventDoc, "Soft deleted, will be deleted permanently after 10 days"));
 });
@@ -328,7 +332,7 @@ const updateEvent = asyncHandler(async (req, res) => {
         "eventName", "description", "venue", "eventCategory",
         "eventStartDateTime", "eventEndDateTime",
         "registrationOpenDate", "registrationCloseDate",
-        "registrationFee", "maxParticipants", "status"
+        "registrationFee", "maxParticipants"
     ];
 
     // Loop through allowed fields. If present in req.body, add to updates object.
@@ -423,6 +427,7 @@ const registerForEvent = asyncHandler(async (req, res) => {
     // 3. Date Checks
     const now = new Date();
     // Use the stored dates directly
+    if (now <= event.registrationOpenDate) throw new ApiError(400, "Registration not started yet");
     if (event.registrationCloseDate && now > event.registrationCloseDate) {
         throw new ApiError(400, "Registration for this event has closed.");
     }
@@ -456,7 +461,7 @@ const registerForEvent = asyncHandler(async (req, res) => {
         event: eventId,
         user: userId,
         ticketId: ticketId,
-        paymentStatus: event.price > 0 ? "PENDING" : "CONFIRMED", // Future proofing
+        paymentStatus: event.registrationFee > 0 ? "PENDING" : "CONFIRMED", // Future proofing
         attendanceStatus: "ABSENT" // Default status
     });
 
@@ -475,6 +480,112 @@ const registerForEvent = asyncHandler(async (req, res) => {
     );
 });
 
+const cancelRegistration = asyncHandler(async (req, res) => {
+    // We expect eventId in params. 
+    // userId is OPTIONAL in params (used only if Admin is cancelling someone else)
+    const { eventId, userId: targetUserId } = req.params;
+    const requestingUser = req.user; // From auth middleware
+
+    // 1. Determine who is being cancelled
+    let userToCancelId;
+
+    if (requestingUser.role === "ADMIN" || requestingUser.role === "CHIEF") {
+        // If Admin, they MUST provide the targetUserId in params
+        if (!targetUserId) throw new ApiError(400, "Admin must provide userId to cancel.");
+        userToCancelId = targetUserId;
+    } else {
+        // If Regular User, they can ONLY cancel themselves
+        userToCancelId = requestingUser._id;
+    }
+
+    // 2. Find the Registration
+    const regDoc = await registrationModel.findOne({
+        event: eventId,
+        user: userToCancelId
+    });
+
+    if (!regDoc) throw new ApiError(404, "Registration not found.");
+    if(regDoc.canCancel === false){
+        throw new ApiError(400,"Can not cancel this registration once registered!");
+    }
+
+    // 3. Check Event Status
+    const eventDoc = await eventModel.findById(eventId);
+    if (!eventDoc) throw new ApiError(404, "Event not found.");
+
+    // Rule: Cannot cancel if event already started (or maybe 24h before?)
+    const now = new Date();
+    // 24 hours * 60 mins * 60 secs * 1000 ms
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const cancelDeadline = new Date(eventDoc.eventStartDateTime.getTime() - ONE_DAY_MS);
+    if (now >= cancelDeadline) {
+        throw new ApiError(400, "Cannot cancel. The event has already started.");
+    }
+
+    // 4. Prevent Double Cancellation
+    if (regDoc.status === "CANCELLED") {
+        throw new ApiError(400, "Registration is already cancelled.");
+    }
+
+    // 5. PERFORM CANCELLATION
+    regDoc.status = "CANCELLED";
+
+    // --- PAYMENT HANDLING ---
+    // If they paid, we mark it for refund.
+    // In a real app, you would trigger the Stripe/Razorpay Refund API here.
+    if (regDoc.paymentStatus === "CONFIRMED") {
+        regDoc.paymentStatus = "REFUNDED"; // or "REFUND_INITIATED"
+    } else {
+        regDoc.paymentStatus = "CANCELLED"; // If it was PENDING
+    }
+
+    //todo=> in future attach the refund payment logic when a user cancels registration
+    await regDoc.save();
+
+    // 6. FREE UP THE SEAT (Decrement Participant Count)
+    // Only decrement if the event wasn't unlimited (optional, but good practice)
+    await eventModel.findByIdAndUpdate(eventId, {
+        $inc: { participantsCount: -1 }
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, regDoc, "Registration cancelled successfully.")
+    );
+});
+
+
+//TODO => added this controller out of curiosity but havent tested it yet neither made its route
+const verifyPayment = asyncHandler(async (req, res) => {
+    const { 
+        registrationId,
+        paymentId,
+        signature
+    } = req.body;
+
+    // 1. Find the pending registration
+    const regDoc = await registrationModel.findById(registrationId);
+    if (!regDoc) throw new ApiError(404, "Registration not found");
+
+    // 2. VERIFY SIGNATURE (Crucial Security Step)
+    // This logic depends on your provider (Razorpay/Stripe).
+    // It usually involves hashing the paymentId + secret to match the signature.
+    const isSignatureValid = validatePaymentSignature(paymentId, signature, process.env.PAYMENT_SECRET);
+
+    if (!isSignatureValid) {
+        throw new ApiError(400, "Invalid Payment Signature. Fraud attempt?");
+    }
+
+    // 3. UPDATE STATUS
+    regDoc.paymentStatus = "CONFIRMED";
+    regDoc.status = "REGISTERED"; // Now they are officially registered
+
+    await regDoc.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, regDoc, "Payment verified! Registration confirmed.")
+    );
+});
+
 export {
     loginChief,
     createEvent,
@@ -483,5 +594,7 @@ export {
     cancelEvent,
     deleteEvent,
     getEventById,
-    registerForEvent
+    registerForEvent,
+    cancelRegistration,
+    verifyPayment
 };

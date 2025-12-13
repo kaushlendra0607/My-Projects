@@ -13,3 +13,5 @@ export const EVENT_STATUS = {
     CANCELLED: "CANCELLED",
     DELETED: "DELETED" // Optional, if you do soft deletes
 };
+
+export const PAYMENT_STATUS = ["PENDING", "CONFIRMED", "FAILED", "REFUNDED", "CANCELLED"];
