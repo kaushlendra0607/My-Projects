@@ -28,7 +28,7 @@ eventRouter.post(
     createEvent
 );
 
-eventRouter.patch('/attendence',authUser,markAttendance);
+eventRouter.patch('/attendence',authUser,requirePasswordChange,markAttendance);
 
 
 eventRouter.get('/',getAllEvents);
@@ -63,7 +63,8 @@ eventRouter.patch(
 eventRouter.post('/:eventId/register',authUser,registerForEvent);
 
 eventRouter.patch('/:eventId/cancel-registration',authUser,cancelRegistration);
-eventRouter.patch('/:eventId/cancel-registration/:userId',authUser,cancelRegistration);
+eventRouter.patch('/:eventId/cancel-registration/:userId',
+    authUser,requirePasswordChange,cancelRegistration);
 
 eventRouter.get('/get-user-reg/:userId',authUser,getUserRegistrations);
 
@@ -71,6 +72,7 @@ eventRouter.get(
     '/get-event-participants/:eventId',
     authUser,
     verifyRole("ADMIN","CHIEF"),
+    requirePasswordChange,
     getEventparticipants
 );
 
