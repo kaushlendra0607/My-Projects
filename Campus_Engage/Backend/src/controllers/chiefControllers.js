@@ -606,6 +606,43 @@ const cancelRegistration = asyncHandler(async (req, res) => {
     );
 });
 
+const getUserRegistrations = asyncHandler(async (req, res) => {
+    // 1. Get IDs
+    const targetUserId = req.params.userId; // The ID in the URL
+    const requestingUserId = req.user._id;  // The Logged-in User
+
+    // 2. Fetch the Requester's Details (to check Role)
+    const requestingUserDoc = await userModel.findById(requestingUserId);
+    if (!requestingUserDoc) throw new ApiError(401, "Invalid User.");
+
+    // 3. SECURITY CHECK: Authorization Gate
+    // Allow if: (User is asking for themselves) OR (User is Admin/Chief)
+    // Note: We use .toString() because one might be an Object and the other a String
+    const isSelf = requestingUserId.toString() === targetUserId;
+    const isAdmin = requestingUserDoc.role === "ADMIN" || requestingUserDoc.role === "CHIEF";
+
+    if (!isSelf && !isAdmin) {
+        throw new ApiError(403, "Access Denied. You cannot view another user's registrations.");
+    }
+    // 2. Find ALL registrations for this user
+    // .find() returns an Array []
+    // .populate("event") magically replaces the 'event' ID with the actual Event Object
+    const registrations = await registrationModel.find({ user: targetUserId })
+        .populate("event");
+    //populate will return all the object data where field will be event which we gave in schema of registration
+
+    // 3. Validation (Optional: Check if empty)
+    if (!registrations || registrations.length === 0) {
+        // It's not really an error, just an empty list. Return empty array.
+        return res.status(200).json(new ApiResponse(200, [], "No registrations found."));
+    }
+
+    // 4. Send it back
+    return res.status(200).json(
+        new ApiResponse(200, registrations, "User registrations fetched successfully")
+    );
+});
+
 
 //TODO => added this controller out of curiosity but havent tested it yet neither made its route
 const verifyPayment = asyncHandler(async (req, res) => {
@@ -649,5 +686,6 @@ export {
     getEventById,
     registerForEvent,
     cancelRegistration,
-    verifyPayment
+    verifyPayment,
+    getUserRegistrations
 };

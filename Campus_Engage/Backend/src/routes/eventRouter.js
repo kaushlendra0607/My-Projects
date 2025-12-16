@@ -3,7 +3,17 @@ import authUser from "../middlewares/authUser.js";
 import { verifyRole } from "../middlewares/authRole.js";
 import requirePasswordChange from "../middlewares/chiefPass.js";
 import { upload } from "../middlewares/multerMiddle.js";
-import { cancelEvent, cancelRegistration, createEvent, deleteEvent, getAllEvents, getEventById, registerForEvent, updateEvent } from "../controllers/chiefControllers.js";
+import {
+    cancelEvent,
+    cancelRegistration,
+    createEvent,
+    deleteEvent,
+    getAllEvents,
+    getEventById,
+    getUserRegistrations,
+    registerForEvent,
+    updateEvent
+} from "../controllers/chiefControllers.js";
 
 const eventRouter = express.Router();
 
@@ -50,5 +60,7 @@ eventRouter.post('/:eventId/register',authUser,registerForEvent);
 
 eventRouter.patch('/:eventId/cancel-registration',authUser,cancelRegistration);
 eventRouter.patch('/:eventId/cancel-registration/:userId',authUser,cancelRegistration);
+
+eventRouter.get('/get-user-reg/:userId',authUser,getUserRegistrations);
 
 export default eventRouter;
