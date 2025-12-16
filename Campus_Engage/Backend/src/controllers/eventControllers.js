@@ -663,6 +663,44 @@ const getEventparticipants = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, registrations, "Fetch Successfull."));
 });
 
+const markAttendance = asyncHandler(async (req, res) => {
+    // 1. Input: Expect the Custom Ticket ID (e.g., "TICKET-A1B2")
+    const { ticketId } = req.body;
+    const reqUser = req.user._id;
+
+    // 2. Authorize the Organizer
+    const organizer = await userModel.findById(reqUser);
+    if (!organizer || (organizer.role !== "ADMIN" && organizer.role !== "CHIEF")) {
+        throw new ApiError(403, "Access Denied. Only organizers can mark attendance.");
+    }
+
+    // 3. Find Ticket using 'findOne' and your custom field
+    const registration = await registrationModel.findOne({ ticketId: ticketId })
+        .populate("user", "fullName email");
+    if (!registration) {
+        throw new ApiError(404, `Invalid Ticket. No registration found with ID: ${ticketId}`);
+    }
+
+    // 4. Logic Gate: Check Payment Status
+    if (registration.paymentStatus !== "CONFIRMED") {
+        throw new ApiError(400, `Cannot check in. Payment status is ${registration.paymentStatus}.`);
+    }
+
+    // 5. Logic Gate: Check Attendance (Using your Enum)
+    if (registration.attendanceStatus === "PRESENT") {
+        throw new ApiError(409, `User ${registration.user.fullName} has ALREADY checked in.`);
+    }
+
+    // 6. Mark Present
+    registration.attendanceStatus = "PRESENT";
+    registration.checkInTime = new Date();
+    await registration.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, registration, `Welcome, ${registration.user.fullName}! Check-in successful.`)
+    );
+});
+
 
 //TODO => added this controller out of curiosity but havent tested it yet neither made its route
 const verifyPayment = asyncHandler(async (req, res) => {
@@ -708,5 +746,6 @@ export {
     cancelRegistration,
     verifyPayment,
     getUserRegistrations,
-    getEventparticipants
+    getEventparticipants,
+    markAttendance
 };

@@ -12,9 +12,10 @@ import {
     getEventById,
     getEventparticipants,
     getUserRegistrations,
+    markAttendance,
     registerForEvent,
     updateEvent
-} from "../controllers/chiefControllers.js";
+} from "../controllers/eventControllers.js";
 
 const eventRouter = express.Router();
 
@@ -26,6 +27,8 @@ eventRouter.post(
     upload.single("coverImage"),
     createEvent
 );
+
+eventRouter.patch('/attendence',authUser,markAttendance);
 
 
 eventRouter.get('/',getAllEvents);

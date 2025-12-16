@@ -21,6 +21,10 @@ const regSchema = new mongoose.Schema({
         enum: ["PRESENT", "ABSENT"],
         default: "ABSENT"
     },
+    // Optional: distinct from "createdAt" to know WHEN they arrived
+    checkInTime: {
+        type: Date
+    },
 
     // FOR FUTURE PAYMENTS
     paymentStatus: {
@@ -37,9 +41,9 @@ const regSchema = new mongoose.Schema({
         rating: { type: Number, min: 1, max: 5 },
         comment: { type: String, maxlength: 500 }
     },
-    canCancel:{
-        type:Boolean,
-        default:true
+    canCancel: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
 // Compound index to ensure one user can't register twice for the same event
