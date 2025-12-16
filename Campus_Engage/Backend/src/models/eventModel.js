@@ -52,6 +52,7 @@ const eventSchema = new mongoose.Schema(
         registrationFee: {
             type: Number,
             default: 0, // 0 means free
+            min: [0,"Minimum value of fee can be zero."]
         },
         maxParticipants: {
             type: Number,
@@ -81,6 +82,11 @@ const eventSchema = new mongoose.Schema(
             type: Date,
             default: null, // If null, it won't be deleted
             index: { expires: 0 } // THIS IS THE MAGIC
+        },
+        canUserCancel:{
+            type:Boolean,
+            default:true,
+            required:true
         }
     },
     { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } } // Automatically adds createdAt and updatedAt

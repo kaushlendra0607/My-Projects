@@ -64,13 +64,29 @@ const createEvent = asyncHandler(async (req, res) => {
         eventStartDateTime,
         eventEndDateTime,
         registrationOpenDate,
-        registrationCloseDate
+        registrationCloseDate,
+        canUserCancel,
+        maxParticipants,
+        participantsCount
     } = req.body;
-    if(eventCategory){
+    if (eventCategory) {
         eventCategory = eventCategory.toUpperCase();
     }
     if (!EVENT_CATEGORIES.includes(eventCategory)) {
         throw new ApiError(401, `Invalid Category! Allowed values are: ${EVENT_CATEGORIES.join(", ")}`);
+    }
+    // 1. Validate Max Participants (Only if provided)
+    if (maxParticipants !== undefined) {
+        const val = Number(maxParticipants);
+        if (isNaN(val) || val <= 0) {
+            throw new ApiError(400, "Max participants must be a valid number greater than 0.");
+        }
+    }
+    if (participantsCount !== undefined) {
+        const val = Number(participantsCount);
+        if (isNaN(val) || val <= 0) {
+            throw new ApiError(400, "Participant`s count must be a valid number greater than 0.");
+        }
     }
 
     // 3. Validation: Check empty fields
@@ -160,7 +176,13 @@ const createEvent = asyncHandler(async (req, res) => {
         coverImage: coverImageUpload.secure_url,// Use the Cloudinary URL
         // If you are tracking who created it:
         createdBy: req.user._id,
-        expireAt: retentionPeriod
+        expireAt: retentionPeriod,
+        canUserCancel: canUserCancel,
+        maxParticipants: maxParticipants,
+        participantsCount
+        //mongoose handles this automatically for us
+        //if frontend sends a value then it is used
+        //if not then here it will be undefined but default value will be used
     });
 
     return res.status(201).json(
@@ -332,15 +354,42 @@ const updateEvent = asyncHandler(async (req, res) => {
         "eventName", "description", "venue", "eventCategory",
         "eventStartDateTime", "eventEndDateTime",
         "registrationOpenDate", "registrationCloseDate",
-        "registrationFee", "maxParticipants"
+        "registrationFee", "maxParticipants", "canUserCancel", "participantsCount"
     ];
+    const now = new Date();
+    // 24 hours * 60 mins * 60 secs * 1000 ms
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const cancelDeadline = new Date(event.eventStartDateTime.getTime() - ONE_DAY_MS);
 
     // Loop through allowed fields. If present in req.body, add to updates object.
     allowedFields.forEach((field) => {
         if (req.body[field] !== undefined && req.body[field] !== "") {
+            if (field == "canUserCancel") {
+                if (now >= cancelDeadline) {
+                    throw new ApiError(400, "Can not change this now");
+                }
+            }
             updates[field] = req.body[field];
         }
     });
+    if (updates.maxParticipants !== undefined) {
+        // Ensure new limit is not less than current registrations
+        const val = Number(maxParticipants);
+        if (isNaN(val) || val <= 0) {
+            throw new ApiError(400, "Max participants must be a valid number greater than 0.");
+        }
+        else if (updates.maxParticipants < event.participantsCount) {
+            throw new ApiError(400,
+                `Cannot lower capacity to ${updates.maxParticipants}. You already have ${event.participantsCount} participants registered.`
+            );
+        }
+    }
+    if (updates.participantsCount !== undefined) {
+        const val = Number(participantsCount);
+        if (isNaN(val) || val <= 0) {
+            throw new ApiError(400, "Participant`s count must be a valid number greater than 0.");
+        }
+    }
 
     // 3. Handle Image Separate Logic
     if (req.file) {
@@ -389,6 +438,7 @@ const updateEvent = asyncHandler(async (req, res) => {
         if (newRegOpen >= newEnd) {
             throw new ApiError(400, "Registration cannot open after the event has ended.");
         }
+        if (newEnd <= newRegClose) throw new ApiError(400, "Registration can't close after event ends");
     }
 
     // 6. Perform the Update
@@ -427,7 +477,7 @@ const registerForEvent = asyncHandler(async (req, res) => {
     // 3. Date Checks
     const now = new Date();
     // Use the stored dates directly
-    if (now <= event.registrationOpenDate) throw new ApiError(400, "Registration not started yet");
+    if (now <= event.registrationOpenDate) throw new ApiError(400, `Registration not started yet. Opens on ${event.registrationOpenDate.toDateString()}`);
     if (event.registrationCloseDate && now > event.registrationCloseDate) {
         throw new ApiError(400, "Registration for this event has closed.");
     }
@@ -505,13 +555,16 @@ const cancelRegistration = asyncHandler(async (req, res) => {
     });
 
     if (!regDoc) throw new ApiError(404, "Registration not found.");
-    if(regDoc.canCancel === false){
-        throw new ApiError(400,"Can not cancel this registration once registered!");
+    if (regDoc.canCancel === false) {
+        throw new ApiError(400, "Can not cancel this registration once registered!");
     }
 
     // 3. Check Event Status
     const eventDoc = await eventModel.findById(eventId);
     if (!eventDoc) throw new ApiError(404, "Event not found.");
+    if (eventDoc.canUserCancel === false) {
+        throw new ApiError(400, "Once registered can not cancel for this event.");
+    }
 
     // Rule: Cannot cancel if event already started (or maybe 24h before?)
     const now = new Date();
@@ -556,7 +609,7 @@ const cancelRegistration = asyncHandler(async (req, res) => {
 
 //TODO => added this controller out of curiosity but havent tested it yet neither made its route
 const verifyPayment = asyncHandler(async (req, res) => {
-    const { 
+    const {
         registrationId,
         paymentId,
         signature
