@@ -643,6 +643,26 @@ const getUserRegistrations = asyncHandler(async (req, res) => {
     );
 });
 
+const getEventparticipants = asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const reqUser = req.user._id;
+    const eventDoc = await eventModel.findOne({ _id: eventId });
+    if (!eventDoc) throw new ApiError(400, "No such event found.");
+    const reqDoc = await userModel.findById(reqUser);
+    if (!reqDoc) throw new ApiError(400, "Invalid request for participants.");
+    if (reqDoc.role !== "ADMIN" && reqDoc.role !== "CHIEF") {
+        throw new ApiError(400, "You are not allowed for this data access.");
+    }
+    // 3. Find Participants
+    // PRO TIP: Populate only name/email. Don't send the user's password or version key!
+    const registrations = await registrationModel.find({ event: eventId })
+        .populate("user", "username email fullName avatar");
+    if (!registrations || registrations.length == 0) {
+        throw new ApiError(400, "No such registration found at all.");
+    }
+    return res.status(200).json(new ApiResponse(200, registrations, "Fetch Successfull."));
+});
+
 
 //TODO => added this controller out of curiosity but havent tested it yet neither made its route
 const verifyPayment = asyncHandler(async (req, res) => {
@@ -687,5 +707,6 @@ export {
     registerForEvent,
     cancelRegistration,
     verifyPayment,
-    getUserRegistrations
+    getUserRegistrations,
+    getEventparticipants
 };

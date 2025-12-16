@@ -10,6 +10,7 @@ import {
     deleteEvent,
     getAllEvents,
     getEventById,
+    getEventparticipants,
     getUserRegistrations,
     registerForEvent,
     updateEvent
@@ -62,5 +63,12 @@ eventRouter.patch('/:eventId/cancel-registration',authUser,cancelRegistration);
 eventRouter.patch('/:eventId/cancel-registration/:userId',authUser,cancelRegistration);
 
 eventRouter.get('/get-user-reg/:userId',authUser,getUserRegistrations);
+
+eventRouter.get(
+    '/get-event-participants/:eventId',
+    authUser,
+    verifyRole("ADMIN","CHIEF"),
+    getEventparticipants
+);
 
 export default eventRouter;
