@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
         required: true,
-        default:"https://cdn-icons-png.flaticon.com/512/149/149071.png"
+        default: "https://cdn-icons-png.flaticon.com/512/149/149071.png"
     },
     password: {
         type: String,
@@ -38,9 +38,18 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
-    isDefaultPassword:{
-        type:Boolean,
-        default:false
+    isDefaultPassword: {
+        type: Boolean,
+        default: false
+    },
+    batch: {
+        type: Number,
+        default: new Date().getFullYear()
+    },
+    expireAt: {
+        type: Date,
+        default: null, // If null, it won't be deleted
+        index: { expires: 0 } // THIS IS THE MAGIC
     },
     refreshToken: { type: String }
 

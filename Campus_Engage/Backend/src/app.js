@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import userRouter from "./routes/userRouter.js";
 import eventRouter from "./routes/eventRouter.js";
 import fs from "fs";
+import chiefRouter from "./routes/chiefRouter.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 
 app.use("/api/users", userRouter);
 app.use('/api/event', eventRouter);
+app.use('/api/chief/secure', chiefRouter);
 console.log("\nServer running on port: ", process.env.CORS_ORIGIN);
 app.use(async (err, req, res, next) => {
     // Clean up uploaded files if present

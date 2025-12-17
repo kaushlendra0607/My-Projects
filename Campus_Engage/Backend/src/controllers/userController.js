@@ -7,7 +7,7 @@ import validator from "validator";
 import fs, { access } from 'fs';
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { fullName, email, userName, password, avatar } = req.body;
+    const { fullName, email, userName, password, avatar, batch, role = "USER" } = req.body;
     if (
         [fullName, email, userName, password, avatar].some((field) => field?.trim() === "")
     ) {
@@ -38,12 +38,22 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!avatarLoad) {
         throw new ApiError(400, "Couldn't upload avatar");
     }
+    if (!batch) throw new ApiError(400, "Btach start year is required!");
+    const currentYear = new Date().getFullYear();
+    if (batch < currentYear) throw new ApiError(400, "Batch year can not be previous than current year.");
+    let expireDate = new Date();
+    expireDate.setFullYear(batch + 4);
+    expireDate.setMonth(10);
+    expireDate.setDate(1);
+    if(role !== "USER") expireDate = null;
     const userDoc = await userModel.create({
         fullName,
         email,
         userName: userName.toLowerCase(),
         password,
-        avatar: avatarLoad.secure_url
+        avatar: avatarLoad.secure_url,
+        batch,
+        expireAt: expireDate
     });
     const options = {
         httpOnly: true,
