@@ -64,7 +64,7 @@ eventRouter.post('/:eventId/register',authUser,registerForEvent);
 
 eventRouter.patch('/:eventId/cancel-registration',authUser,cancelRegistration);
 eventRouter.patch('/:eventId/cancel-registration/:userId',
-    authUser,requirePasswordChange,cancelRegistration);
+    authUser,requirePasswordChange,verifyRole("ADMIN","CHIEF"),cancelRegistration);
 
 eventRouter.get('/get-user-reg/:userId',authUser,getUserRegistrations);
 

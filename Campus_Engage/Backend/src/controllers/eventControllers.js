@@ -8,6 +8,9 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 import { EVENT_CATEGORIES } from "../constants.js";
 import registrationModel from "../models/registrationModel.js";
 import crypto from "crypto";
+import paymentModel from "../models/paymentModel.js";
+import { createRazorpayInstance } from "../utils/razorPayInstance.js";
+import { validatePaymentVerification } from "razorpay/dist/utils/razorpay-utils.js";
 
 
 const createEvent = asyncHandler(async (req, res) => {
@@ -425,18 +428,21 @@ const registerForEvent = asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user._id;
 
+    // ============================================================
+    // 🛑 OLD LOGIC PRESERVED (Steps 1-5) - DO NOT TOUCH
+    // ============================================================
+
     // 1. Fetch Event
     const event = await eventModel.findById(eventId);
     if (!event) throw new ApiError(404, "Event not found");
 
-    // 2. Sanity Checks: Cancelled or Deleted?
+    // 2. Sanity Checks
     if (event.isCancelled || event.isDeleted) {
         throw new ApiError(400, "Cannot register for a cancelled or deleted event.");
     }
 
     // 3. Date Checks
     const now = new Date();
-    // Use the stored dates directly
     if (now <= event.registrationOpenDate) throw new ApiError(400, `Registration not started yet. Opens on ${event.registrationOpenDate.toDateString()}`);
     if (event.registrationCloseDate && now > event.registrationCloseDate) {
         throw new ApiError(400, "Registration for this event has closed.");
@@ -445,8 +451,7 @@ const registerForEvent = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Event has already started.");
     }
 
-    // 4. Duplicate Check (CRITICAL)
-    // Check if this user is already registered for this specific event
+    // 4. Duplicate Check
     const existingRegistration = await registrationModel.findOne({
         event: eventId,
         user: userId
@@ -455,39 +460,87 @@ const registerForEvent = asyncHandler(async (req, res) => {
         throw new ApiError(409, "You are already registered for this event.");
     }
 
-    // 5. Max Participants Check (Capacity)
-    // Only check if maxParticipants is > 0 (assuming 0 means unlimited)
+    // 5. Max Participants Check
     if (event.maxParticipants > 0 && event.participantsCount >= event.maxParticipants) {
         throw new ApiError(400, "Event is fully booked.");
     }
 
-    // 6. Generate Unique Ticket ID (For Attendance)
-    // Format: EV-UserLast4-RandomHex (e.g., EV-8A2B-9F22)
+    // ============================================================
+    // 🚀 NEW INDUSTRIAL LOGIC (Split: Paid vs Free)
+    // ============================================================
+
+    // Common Step: Generate Ticket ID (Needed for both)
     const uniqueSuffix = crypto.randomBytes(4).toString('hex').toUpperCase();
     const ticketId = `TICKET-${uniqueSuffix}`;
 
-    // 7. Create Registration
-    const registration = await registrationModel.create({
-        event: eventId,
-        user: userId,
-        ticketId: ticketId,
-        paymentStatus: event.registrationFee > 0 ? "PENDING" : "CONFIRMED", // Future proofing
-        attendanceStatus: "ABSENT" // Default status
-    });
+    // ------------------------------------------
+    // CASE A: PAID EVENT (Layer 1: Payment Intent)
+    // ------------------------------------------
+    if (event.registrationFee > 0) {
 
-    if (!registration) {
-        throw new ApiError(500, "Something went wrong while registering.");
+        // 1. Create Razorpay Order
+        const options = {
+            amount: event.registrationFee * 100, // Convert to paise
+            currency: "INR",
+            receipt: `receipt_${Date.now()}` // Fixed spelling
+        };
+
+        let placedOrder;
+        try {
+            const razorPayInstance = await createRazorpayInstance();
+            placedOrder = await razorPayInstance.orders.create(options);
+        } catch (error) {
+            console.error("Razorpay Error: ", error);
+            throw new ApiError(500, "Payment gateway initialization failed.");
+        }
+
+        // 2. Save Payment Intent (PENDING)
+        // We do NOT create a Registration doc yet. We do NOT increment count yet.
+        const newPayment = await paymentModel.create({
+            userId: userId,
+            eventId: eventId,
+            ticket_id: ticketId, // Saved here temporarily
+            razorpay_order_id: placedOrder.id,
+            amount: event.registrationFee * 100,
+            status: "PENDING"
+        });
+
+        // 3. Return Order ID to Frontend
+        return res.status(200).json(
+            new ApiResponse(200, {
+                orderId: placedOrder.id,
+                amount: event.registrationFee,
+                currency: "INR"
+            }, "Order created. Proceed to payment.")
+        );
     }
 
-    // 8. Increment Participant Count on Event (Atomic Update)
-    // We use $inc to ensure accuracy even if 2 people register at the exact same millisecond
-    await eventModel.findByIdAndUpdate(eventId, {
-        $inc: { participantsCount: 1 }
-    });
+    // ------------------------------------------
+    // CASE B: FREE EVENT (Instant Registration)
+    // ------------------------------------------
+    else {
+        // 1. Create Registration Directly
+        const registration = await registrationModel.create({
+            event: eventId,
+            user: userId,
+            ticketId: ticketId,
+            paymentStatus: "CONFIRMED", // It's free
+            attendanceStatus: "ABSENT"
+        });
 
-    return res.status(201).json(
-        new ApiResponse(201, registration, "Registration successful.")
-    );
+        if (!registration) {
+            throw new ApiError(500, "Something went wrong while registering.");
+        }
+
+        // 2. Increment Participant Count (Only for Free events right now)
+        await eventModel.findByIdAndUpdate(eventId, {
+            $inc: { participantsCount: 1 }
+        });
+
+        return res.status(201).json(
+            new ApiResponse(201, registration, "Registration successful.")
+        );
+    }
 });
 
 const cancelRegistration = asyncHandler(async (req, res) => {
@@ -662,35 +715,89 @@ const markAttendance = asyncHandler(async (req, res) => {
 });
 
 
-//TODO => added this controller out of curiosity but havent tested it yet neither made its route
 const verifyPayment = asyncHandler(async (req, res) => {
-    const {
-        registrationId,
-        paymentId,
-        signature
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    // 1. Find the pending registration
-    const regDoc = await registrationModel.findById(registrationId);
-    if (!regDoc) throw new ApiError(404, "Registration not found");
+    const userId = req.user._id;
 
-    // 2. VERIFY SIGNATURE (Crucial Security Step)
-    // This logic depends on your provider (Razorpay/Stripe).
-    // It usually involves hashing the paymentId + secret to match the signature.
-    const isSignatureValid = validatePaymentSignature(paymentId, signature, process.env.PAYMENT_SECRET);
+    // 1. Find the Pending Payment Document
+    // We use razorpay_order_id to find the exact transaction we created earlier
+    const tempPayment = await paymentModel.findOne({ 
+        razorpay_order_id: razorpay_order_id, 
+        userId: userId 
+    });
 
-    if (!isSignatureValid) {
-        throw new ApiError(400, "Invalid Payment Signature. Fraud attempt?");
+    if (!tempPayment) {
+        throw new ApiError(404, "Payment record not found.");
     }
 
-    // 3. UPDATE STATUS
-    regDoc.paymentStatus = "CONFIRMED";
-    regDoc.status = "REGISTERED"; // Now they are officially registered
+    // 2. Idempotency Check (Double Payment Prevention)
+    // If frontend sends the same request twice, don't register twice!
+    if (tempPayment.status === "CONFIRMED") {
+        return res.status(200).json(new ApiResponse(200, {}, "Payment already verified."));
+    }
 
-    await regDoc.save();
+    // 3. Verify Signature (The Built-in Way) 🔐
+    const secret = process.env.RAZOR_KEY_SECRET;
+
+    const isValidSignature = validatePaymentVerification(
+        { "order_id": razorpay_order_id, "payment_id": razorpay_payment_id },
+        razorpay_signature,
+        secret
+    );
+
+    if (!isValidSignature) {
+        // Log this security breach attempt!
+        tempPayment.status = "FAILED";
+        await tempPayment.save();
+        throw new ApiError(400, "Invalid payment signature. Potential fraud attempt.");
+    }
+
+    // 4. Update Payment Status (Success)
+    tempPayment.status = "CONFIRMED";
+    tempPayment.razorpay_payment_id = razorpay_payment_id;
+    tempPayment.razorpay_signature = razorpay_signature;
+    await tempPayment.save();
+
+    // 5. Create the Final Registration
+    // We retrieve the ticketId and eventId from the temporary payment doc
+    const registration = await registrationModel.create({
+        event: tempPayment.eventId,
+        user: userId,
+        ticketId: tempPayment.ticket_id, // Reuse the ticket ID we generated earlier
+        paymentStatus: "CONFIRMED",
+        attendanceStatus: "ABSENT"
+    });
+    if(!registration){
+        throw new ApiError(500,"Something went wrong while registering. Contact admin to fix issue if payment has been deducted.");
+    }
+
+    // 6. Update Event Stats (Increment Participants)
+    await eventModel.findByIdAndUpdate(tempPayment.eventId, {
+        $inc: { participantsCount: 1 }
+    });
 
     return res.status(200).json(
-        new ApiResponse(200, regDoc, "Payment verified! Registration confirmed.")
+        new ApiResponse(200, registration, "Payment verified and Registration successful!")
+    );
+});
+
+// Get all payments for the logged-in user
+const getPaymentHistory = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const reqUser = req.user._id;
+    let targetUser = userId || reqUser;
+
+    const payments = await paymentModel.find({ userId: targetUser })
+        .populate("eventId", "title eventStartDateTime venue") // Join with Event to show details
+        .sort({ createdAt: -1 }); // Newest first
+
+    if (!payments) {
+        return res.status(200).json(new ApiResponse(200, [], "No payment history found"));
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, payments, "Payment history fetched successfully")
     );
 });
 
@@ -706,5 +813,6 @@ export {
     verifyPayment,
     getUserRegistrations,
     getEventparticipants,
-    markAttendance
+    markAttendance,
+    getPaymentHistory
 };
