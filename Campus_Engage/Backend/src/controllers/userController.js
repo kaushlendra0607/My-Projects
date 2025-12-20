@@ -4,12 +4,13 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import userModel from "../models/userModel.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import validator from "validator";
+import jwt from "jsonwebtoken";
 import fs, { access } from 'fs';
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { fullName, email, userName, password, avatar, batch, role = "USER" } = req.body;
+    const { fullName, email, userName, password, batch, role = "USER" } = req.body;
     if (
-        [fullName, email, userName, password, avatar].some((field) => field?.trim() === "")
+        [fullName, email, userName, password].some((field) => field?.trim() === "")
     ) {
         throw new ApiError(400, "All fields are required");
     }
@@ -40,12 +41,13 @@ const registerUser = asyncHandler(async (req, res) => {
     }
     if (!batch) throw new ApiError(400, "Btach start year is required!");
     const currentYear = new Date().getFullYear();
-    if (batch < currentYear) throw new ApiError(400, "Batch year can not be previous than current year.");
+    if (batch < currentYear - 3) throw new ApiError(400, "Batch year can not be previous than 3 year.");
+    if (batch > currentYear) throw new ApiError(400, "Batch year can not be in future.");
     let expireDate = new Date();
     expireDate.setFullYear(batch + 4);
     expireDate.setMonth(10);
     expireDate.setDate(1);
-    if(role !== "USER") expireDate = null;
+    if (role !== "USER") expireDate = null;
     const userDoc = await userModel.create({
         fullName,
         email,
@@ -226,11 +228,74 @@ const updateAvatar = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, user, "Avatar Updated"));
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    // 1. Get the Refresh Token from Cookies (Secure) or Body (Fallback)
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized request. No refresh token found.");
+    }
+
+    try {
+        // 2. Verify the Token
+        // This checks if the token is valid and not expired
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
+        // 3. Find the User
+        // We look up the user by the ID inside the token
+        const user = await userModel.findById(decodedToken?._id);
+
+        if (!user) {
+            throw new ApiError(401, "Invalid refresh token. User not found.");
+        }
+
+        // 4. Security Check: Token Matching
+        // Does the token in the cookie match the one saved in the Database?
+        // This prevents "Token Reuse" attacks.
+        if (incomingRefreshToken !== user?.refreshToken) {
+            throw new ApiError(401, "Refresh token is expired or used.");
+        }
+
+        // 5. Generate NEW Tokens
+        // We generate a fresh pair. You *could* just generate a new Access Token, 
+        // but rotating both is safer (Rotation Strategy).
+        const accessToken = await userModel.generateAccessToken();
+        const newRefreshToken = await userModel.generateRefreshToken();
+        user.refreshToken = newRefreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        // 6. Send Response
+        // We send the new Access Token in JSON, and the new Refresh Token in the Cookie
+        const options = {
+            httpOnly: true,
+            secure: true
+        };
+
+        return res
+            .status(200)
+            .cookie("refreshToken", newRefreshToken, options) // Update the cookie
+            .json(
+                new ApiResponse(
+                    200,
+                    { accessToken, refreshToken: newRefreshToken },
+                    "Access token refreshed"
+                )
+            );
+
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh token");
+    }
+});
+
 export {
     registerUser,
     loginUser,
     logOutUser,
     updateUser,
     changePassword,
-    updateAvatar
+    updateAvatar,
+    refreshAccessToken
 };

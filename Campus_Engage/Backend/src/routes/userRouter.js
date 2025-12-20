@@ -3,6 +3,7 @@ import {
     changePassword,
     loginUser,
     logOutUser,
+    refreshAccessToken,
     registerUser,
     updateAvatar,
     updateUser
@@ -22,6 +23,7 @@ userRouter.post(
     ]),
     registerUser
 );
+userRouter.post('/refresh-token',refreshAccessToken);
 userRouter.post('/login', loginUser);
 userRouter.post('/logout', authUser, logOutUser);
 userRouter.route('/update-account').patch(authUser,updateUser);
