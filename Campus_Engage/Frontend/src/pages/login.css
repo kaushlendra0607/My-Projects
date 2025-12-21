@@ -1,0 +1,171 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* Add padding reset too */
+}
+
+/* ... Keep your :root and body.dark-mode code ... */
+:root {
+    --bg-primary: #ffffff;
+    /* Main background */
+    --bg-secondary: #f3f4f6;
+    /* Cards/Inputs */
+    --text-primary: #111827;
+    /* Main headings */
+    --text-secondary: #6b7280;
+    /* Subtitles */
+    --accent-color: #2563eb;
+    /* Buttons/Links */
+    --border-color: #e5e7eb;
+}
+
+body.dark-mode {
+    --bg-primary: #0f172a;
+    /* Dark Blue/Black */
+    --bg-secondary: #1e293b;
+    /* Slightly lighter dark */
+    --text-primary: #f8fafc;
+    /* White text */
+    --text-secondary: #94a3b8;
+    /* Light gray text */
+    --border-color: #334155;
+    /* Note: You might keep accent-color the same, or tweak it */
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+html {
+    font-size: 62.5%;
+    /* Standard is 62.5% (1rem = 10px) */
+}
+
+.login {
+    display: flex;
+    align-items: center;
+    /* Better than place-items for Flex */
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    /* Prevents scrollbars */
+}
+
+/* Left Side (Form) */
+.login-form {
+    flex: 1;
+    /* Automatically takes 50% */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* Centers vertically */
+    padding: 2rem;
+}
+
+/* Right Side (Image) */
+.event-img {
+    flex: 1;
+    /* Automatically takes the other 50% */
+    height: 100%;
+    object-fit: cover;
+    /* CRITICAL: Prevents image distortion */
+}
+
+.login-head {
+    font-size: 4rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    /* Spacing */
+}
+
+.login-input {
+    padding: 1.2rem;
+    font-size: 1.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 1rem;
+    margin: 1rem 0;
+    width: 100%;
+    /* Fill the container */
+    max-width: 40rem;
+    /* But don't get too big */
+    background-color: var(--bg-primary);
+    /* Ensure background is set */
+    color: var(--text-primary);
+}
+
+.login-input::placeholder {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+}
+
+.submit {
+    padding: 1.2rem 4rem;
+    border-radius: 1rem;
+    font-size: 1.8rem;
+    margin-top: 2rem;
+    cursor: pointer;
+    background-color: var(--accent-color);
+    /* Use accent color for buttons usually */
+    color: white;
+    border: none;
+    transition: all 0.2s;
+}
+
+.submit:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+.submit:active {
+    transform: translateY(0);
+    box-shadow: 0.5rem 0.5rem 2rem var(--bg-secondary);
+
+}
+
+.options {
+    margin-top: 1.5rem;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.options:hover {
+    color: var(--text-secondary);
+}
+
+.profile-label {
+    font-size: 1.8rem;
+}
+
+/* 📱 MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+    html {
+        font-size: 40%;
+    }
+
+    .login {
+        flex-direction: column-reverse;
+        /* Put image on top or bottom */
+    }
+
+    .event-img {
+        height: 30vh;
+        /* Image takes top 30% */
+        width: 100%;
+    }
+
+    .login-form {
+        height: 70vh;
+        /* Form takes rest */
+        width: 100%;
+    }
+
+    .login-input {
+        width: 90%;
+        /* Wider on mobile */
+    }
+}
