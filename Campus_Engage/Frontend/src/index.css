@@ -1,1 +1,117 @@
 @import "tailwindcss";
+
+/* Remove default "eye" icon in Edge/IE */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* Add padding reset too */
+}
+
+/* ... Keep your :root and body.dark-mode code ... */
+:root {
+    --bg-primary: #ffffff;
+    /* Main background */
+    --bg-secondary: #dddddd;
+    /* Cards/Inputs */
+    --text-primary: #111827;
+    /* Main headings */
+    --text-secondary: #6b7280;
+    /* Subtitles */
+    --accent-color: #2563eb;
+    /* Buttons/Links */
+    --border-color: #e5e7eb;
+}
+
+body.dark-mode {
+    --bg-primary: #0f172a;
+    /* Dark Blue/Black */
+    --bg-secondary: #1e293b;
+    /* Slightly lighter dark */
+    --text-primary: #f8fafc;
+    /* White text */
+    --text-secondary: #94a3b8;
+    /* Light gray text */
+    --border-color: #334155;
+    /* Note: You might keep accent-color the same, or tweak it */
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+html {
+    font-size: 62.5%;
+    /* Standard is 62.5% (1rem = 10px) */
+}
+
+/* --- TOASTIFY OVERRIDES --- */
+
+/* 1. The Main Box (Background & Shape) */
+.Toastify__toast {
+    border-radius: 12px !important;
+    /* Rounder corners */
+    padding: 16px !important;
+    /* More breathing room */
+}
+
+/* 2. The Text Content (Font Size & Weight) */
+.Toastify__toast-body {
+    font-family: 'Inter', sans-serif;
+    /* Match your app font */
+    font-size: 1.5rem !important;
+    /* Bigger text (default is small) */
+    font-weight: 600 !important;
+    /* Bolder text */
+    line-height: 1.4 !important;
+}
+
+/* 3. Specific Background Colors (Optional) */
+/* By default, Toastify is white. Use these to change the colors based on type. */
+
+/* SUCCESS (Green) */
+.Toastify__toast--success {
+    background-color: #03bf16 !important;
+    /* Tailwind Emerald-500 */
+    color: white !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+}
+
+/* Change the icon color to match */
+.Toastify__toast--success .Toastify__toast-icon svg {
+    fill: white !important;
+}
+
+/* ERROR (Red) */
+.Toastify__toast--error {
+    background-color: #ef4444 !important;
+    /* Tailwind Red-500 */
+    color: white !important;
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+}
+
+.Toastify__toast--error .Toastify__toast-icon svg {
+    fill: white !important;
+}
+
+/* INFO (Blue) */
+.Toastify__toast--info {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+/* 4. The Progress Bar (The moving line at bottom) */
+.Toastify__progress-bar {
+    height: 4px !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    /* Semi-transparent white */
+}

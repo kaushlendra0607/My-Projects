@@ -1,0 +1,199 @@
+/* --- 1. Main Container (Glassmorphism) --- */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    /* Fixed Height & Sticky */
+    height: 7rem;
+    width: 100%;
+    padding: 0 4rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* Stays on top of content */
+
+    /* Glass Effect */
+    background-color: var(--bg-primary); /* Fallback */
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* --- 2. Logo --- */
+.logoLink {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    height: 4.5rem;
+    width: auto;
+    border-radius: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+/* --- 3. Navigation Layout --- */
+.navContainer {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+}
+
+.navList {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* --- 4. Links Styling --- */
+.link {
+    text-decoration: none;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    padding: 0.5rem 0;
+    position: relative;
+    cursor: pointer;
+}
+
+.link:hover, .active {
+    color: var(--accent-color);
+}
+
+/* The "Underline" animation effect */
+.link::after {
+    content: '';
+    position: absolute;
+    width: 0%;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: var(--accent-color);
+    transition: width 0.3s;
+}
+
+.link:hover::after, .active::after {
+    width: 100%;
+}
+
+/* --- 5. 🚀 THE DROPDOWN MAGIC --- */
+.dropdownParent {
+    position: relative; /* Anchor point for absolute child */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 150%; /* Pushes it down below header */
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.8rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    
+    min-width: 180px;
+    padding: 1rem 0;
+    list-style: none;
+    
+    /* Animation: Hidden by default */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Show Dropdown on Hover of Parent */
+.dropdownParent:hover .dropdownMenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.dropdownLink {
+    display: block;
+    padding: 1rem 2rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.dropdownLink:hover {
+    background-color: var(--bg-secondary);
+    color: var(--accent-color);
+}
+
+/* --- 6. User Actions (Avatar + Buttons) --- */
+.userActions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-left: 2rem;
+    border-left: 2px solid var(--border-color); /* Divider line */
+}
+
+.avatar {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+    transition: border-color 0.3s;
+}
+
+.avatar:hover {
+    border-color: var(--accent-color);
+}
+
+/* --- 7. Buttons --- */
+.themeBtn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+.themeBtn:hover {
+    background-color: var(--bg-secondary);
+}
+
+.logoutBtn {
+    padding: 0.8rem 2rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--border-color);
+    background-color: transparent;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+    background-color: #ef4444; /* Red color for danger action */
+    color: white;
+    border-color: #ef4444;
+}
+
+/* --- Mobile Check --- */
+@media (max-width: 768px) {
+    .header {
+        padding: 0 2rem;
+    }
+    .navList {
+        display: none; /* Hide nav links on small mobile for now */
+    }
+}

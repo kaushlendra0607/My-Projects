@@ -1,47 +1,13 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    /* Add padding reset too */
-}
-
-/* ... Keep your :root and body.dark-mode code ... */
-:root {
-    --bg-primary: #ffffff;
-    /* Main background */
-    --bg-secondary: #f3f4f6;
-    /* Cards/Inputs */
-    --text-primary: #111827;
-    /* Main headings */
-    --text-secondary: #6b7280;
-    /* Subtitles */
-    --accent-color: #2563eb;
-    /* Buttons/Links */
-    --border-color: #e5e7eb;
-}
-
-body.dark-mode {
-    --bg-primary: #0f172a;
-    /* Dark Blue/Black */
-    --bg-secondary: #1e293b;
-    /* Slightly lighter dark */
-    --text-primary: #f8fafc;
-    /* White text */
-    --text-secondary: #94a3b8;
-    /* Light gray text */
-    --border-color: #334155;
-    /* Note: You might keep accent-color the same, or tweak it */
-}
-
-body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    transition: background-color 0.3s, color 0.3s;
-}
-
-html {
-    font-size: 62.5%;
-    /* Standard is 62.5% (1rem = 10px) */
+.theme-toggle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 1rem;
+    background-color: var(--bg-secondary);
+    padding: 1.5rem;
+    font-size: 1.5rem;
+    border-radius: 1rem;
+    cursor: pointer;
 }
 
 .login {
@@ -51,6 +17,7 @@ html {
     height: 100vh;
     width: 100vw;
     overflow: hidden;
+    position: relative;
     /* Prevents scrollbars */
 }
 
@@ -139,6 +106,134 @@ html {
 
 .profile-label {
     font-size: 1.8rem;
+}
+
+.pass {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 40rem;
+    gap: 1rem;
+}
+
+.password-toggle {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* 1. The Backdrop - Covers entire screen, dims background */
+.login-cropBackdrop {
+    position: fixed;
+    /* Sit on top of everything */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    /* Darker dimmer */
+    z-index: 9999;
+    /* Ensure it's on top of header/nav */
+
+    /* Center content perfectly */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    /* Space between image box and buttons */
+    padding: 2rem;
+    backdrop-filter: blur(5px);
+    /* Optional: modern frosted glass effect */
+}
+
+/* 2. The Container - Constrains the Cropper size */
+.login-cropContainer {
+    position: relative;
+    /* CRITICAL: react-easy-crop needs this */
+    width: 100%;
+    max-width: 500px;
+    /* Don't get too wide on big screens */
+    height: 500px;
+    /* Fixed height ensures it doesn't blow up */
+    background-color: #333;
+    /* Dark background for empty space */
+    border-radius: 1.2rem;
+    overflow: hidden;
+    /* Clip corners */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* 3. Action Buttons Area */
+.login-cropActions {
+    display: flex;
+    gap: 1.5rem;
+}
+
+/* Common Button Styles */
+.login-confirmBtn,
+.login-cancelBtn,
+.login-skipBtn {
+    padding: 1rem 2.5rem;
+    font-size: 1.6rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Primary Action (Confirm) */
+.login-confirmBtn {
+    background-color: var(--accent-color, #2563eb);
+    /* Use your theme color or fallback blue */
+    color: white;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+}
+
+.login-skipBtn {
+    background-color: var(--accent-color, #2563eb);
+    /* Use your theme color or fallback blue */
+    color: white;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+}
+
+.login-confirmBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(37, 99, 235, 0.4);
+    filter: brightness(1.1);
+}
+
+.login-skipBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(37, 99, 235, 0.4);
+    filter: brightness(1.1);
+}
+
+/* Secondary Action (Cancel) */
+.login-cancelBtn {
+    background-color: transparent;
+    color: var(--text-primary, #e5e7eb);
+    /* Use theme text color */
+    border: 2px solid var(--border-color, #525252);
+}
+
+.login-cancelBtn:hover {
+    background-color: var(--bg-secondary, #525252);
+}
+
+/* Responsive adjustments for small phones */
+@media (max-width: 640px) {
+    .login-cropContainer {
+        height: 40vh;
+        /* Use viewport height on mobile */
+        max-height: 400px;
+    }
+
+    .login-confirmBtn,
+    .login-cancelBtn {
+        padding: 0.8rem 2rem;
+        font-size: 1.4rem;
+    }
 }
 
 /* 📱 MOBILE RESPONSIVENESS */

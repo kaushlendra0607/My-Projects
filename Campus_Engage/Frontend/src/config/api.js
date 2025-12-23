@@ -21,39 +21,43 @@ api.interceptors.request.use(
 
 // 3. Response Interceptor: Handle 401 errors (Token Expiry)
 api.interceptors.response.use(
-    (response) => response, // If success, just return data
+    (response) => response,
     async (error) => {
         const originalRequest = error.config;
-
-        // Check if error is 401 (Unauthorized) AND we haven't tried refreshing yet
+        // 🛑 FIX: Check if the failed request was for Login or Register
+        // If yes, we reject immediately. We don't want to refresh tokens for a login attempt.
+        if (originalRequest.url.includes("/login") || originalRequest.url.includes("/register")) {
+            return Promise.reject(error);
+        }
+        // IF 401 (Unauthorized) AND we haven't tried refreshing yet
         if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true; // Mark as retried to prevent infinite loops
+            originalRequest._retry = true;
 
             try {
-                // 🛑 Hit the Refresh Endpoint
-                // We use raw 'axios' here to avoid using the 'api' interceptors again
-                const response = await axios.post(
-                    `${backendURL}/api/users/refresh-token`,
-                    {}, // Empty body
-                    { withCredentials: true } // Must send cookies!
-                );
+                // ✅ 1. Use RAW axios (Not 'api')
+                // This prevents an infinite loop if the refresh endpoint itself fails.
+                // We must include { withCredentials: true } so the cookie is sent!
+                await axios.post("http://localhost:8000/api/users/refresh-token", {}, {
+                    withCredentials: true
+                });
 
-                // 🛑 Extract new token (Matches your ApiResponse structure)
-                const newAccessToken = response.data.data.accessToken;
+                // 🛑 NO extraction needed (Token is in httpOnly cookie)
+                // 🛑 NO localStorage.setItem needed
+                // 🛑 NO header setting needed
 
-                // 🛑 Save and Retry
-                localStorage.setItem('token', newAccessToken);
-                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-                // Retry the original failed request with the new token
+                // ✅ 2. Retry the original request
+                // The browser has ALREADY updated the cookie jar. 
+                // When we call api(), it automatically grabs the new cookie.
                 return api(originalRequest);
 
             } catch (refreshError) {
-                // If refresh fails (Refresh Token also expired or invalid), Logout user
-                console.error("Session expired. Logging out...", refreshError);
+                // ❌ REFRESH FAILED
+                console.log("Session expired.\n", refreshError);
+
+                // Cleanup local storage just in case you use it for other things
                 localStorage.removeItem('token');
-                window.location.href = '/login'; // Redirect to login
-                return Promise.reject(refreshError);
+
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);

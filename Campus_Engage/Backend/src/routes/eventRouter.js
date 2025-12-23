@@ -28,7 +28,8 @@ eventRouter.post(
     createEvent
 );
 
-eventRouter.patch('/attendence',authUser,requirePasswordChange,markAttendance);
+eventRouter.patch('/attendence',
+    authUser,verifyRole("ADMIN","CHIEF"),requirePasswordChange,markAttendance);
 
 
 eventRouter.get('/',getAllEvents);

@@ -44,6 +44,26 @@ const getAllUsers = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, searchDoc, "Fetch successful."));
 });
 
+const getUserProfile = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    // 🛡️ SECURITY: Only select PUBLIC fields.
+    // NEVER return email or phone for a public profile view.
+    const user = await userModel.findById(userId).select("fullName userName avatar role batch");
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User profile fetched successfully"));
+});
+
 const changeUserRole = asyncHandler(async (req, res) => {
     // 1. Inputs
     const { userId, newRole } = req.body; // newRole: "CHIEF", "USER", "ADMIN"
@@ -113,6 +133,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 export {
     getAllUsers,
+    getUserProfile,
     changeUserRole,
     bulkDeleteGraduatedUsers,
     deleteUser

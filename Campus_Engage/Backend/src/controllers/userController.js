@@ -23,7 +23,10 @@ const registerUser = asyncHandler(async (req, res) => {
     if (userExists) {
         throw new ApiError(409, "User already exists!");
     }
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    let avatarLocalPath;
+    if (req.files && req.files.avatar && req.files.avatar.length > 0) {
+        avatarLocalPath = req.files?.avatar[0]?.path;
+    }
     //console.log('[CTRL] request received:', {
     //     time: new Date().toISOString(),
     //     ip: req.ip,
@@ -219,7 +222,10 @@ const updateAvatar = asyncHandler(async (req, res) => {
     const user = await userModel.findById(req.user._id);
     if (!user) throw new ApiError(401, "User not found");
     // 1. Check for File (Use req.file for single uploads)
-    const avatarLocalPath = req.file?.path;
+    let avatarLocalPath;
+    if (req.file && req.file.path) {
+        avatarLocalPath = req.file.path;
+    }
     if (!avatarLocalPath) throw new ApiError(400, "No file path found");
     const avatarLoad = await uploadOnCloudinary(avatarLocalPath);
     if (!avatarLoad) throw new ApiError(501, "Couldn't upload avatar");
@@ -290,6 +296,21 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
+const getCurrentUser = asyncHandler(async (req, res) => {
+    // Optimization: req.user is ALREADY fetched by verifyJWT middleware.
+    // No need to query the database again!
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                req.user, // Just send what we already have in memory
+                "Current user fetched successfully"
+            )
+        );
+});
+
 export {
     registerUser,
     loginUser,
@@ -297,5 +318,6 @@ export {
     updateUser,
     changePassword,
     updateAvatar,
-    refreshAccessToken
+    refreshAccessToken,
+    getCurrentUser
 };
