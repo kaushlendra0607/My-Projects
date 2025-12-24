@@ -3,6 +3,7 @@ import api from '../config/api.js';
 import { toast } from 'react-toastify';
 import { EVENT_CATEGORIES, EVENT_STATUS } from '../constants.js';
 import styles from "./home.module.css";
+import { Link } from 'react-router';
 // import { debounce } from 'lodash'; // Optional: for smoother searching
 
 const HomePage = () => {
@@ -201,9 +202,9 @@ const EventCard = ({ event }) => (
         <span className={styles.fee}>
           {event.registrationFee === 0 ? "FREE" : `₹${event.registrationFee}`}
         </span>
-        <button className={styles.view}>
+        <Link to={`/event/${event._id}`} className={styles.view} >
           View Details →
-        </button>
+        </Link>
       </div>
     </div>
   </div>

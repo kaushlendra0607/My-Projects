@@ -70,7 +70,7 @@ const Header = ({ theme, toggleTheme }) => {
 
                 {/* The Dropdown Content */}
                 <ul className={styles.dropdownMenu}>
-                  <li><NavLink to={'/events'} className={styles.dropdownLink}>Manage Events</NavLink></li>
+                  <li><NavLink to={'/event/details'} className={styles.dropdownLink}>Manage Events</NavLink></li>
                   <li><NavLink to={'/create-event'} className={styles.dropdownLink}>Create Event</NavLink></li>
                   <li><NavLink to={'/users'} className={styles.dropdownLink}>Manage Users</NavLink></li>
                 </ul>

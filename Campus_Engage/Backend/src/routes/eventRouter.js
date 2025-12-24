@@ -61,7 +61,7 @@ eventRouter.patch(
     deleteEvent
 );
 
-eventRouter.post('/:eventId/register',authUser,registerForEvent);
+eventRouter.post('/register/:eventId',authUser,registerForEvent);
 
 eventRouter.patch('/:eventId/cancel-registration',authUser,cancelRegistration);
 eventRouter.patch('/:eventId/cancel-registration/:userId',

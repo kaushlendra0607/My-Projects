@@ -56,6 +56,7 @@ const eventSchema = new mongoose.Schema(
         },
         maxParticipants: {
             type: Number,
+            min: [0,"Minimum value of maxParticipant can be zero."],
             default: 0, // Avoids unlimited registration crashes
         },
         participantsCount: {

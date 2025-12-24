@@ -27,12 +27,12 @@ const createEvent = asyncHandler(async (req, res) => {
         eventEndDateTime,
         registrationOpenDate,
         registrationCloseDate,
-        canUserCancel,
+        canUserCancel: rawCancel,
         maxParticipants,
-        participantsCount,
         eventCategory: rawCategory // 1. Extract it here with an alias
     } = req.body;
 
+    const canUserCancel = rawCancel === "true";
     // 2. Process it safely
     let eventCategory;
     if (rawCategory) {
@@ -44,14 +44,8 @@ const createEvent = asyncHandler(async (req, res) => {
     // 1. Validate Max Participants (Only if provided)
     if (maxParticipants !== undefined) {
         const val = Number(maxParticipants);
-        if (isNaN(val) || val <= 0) {
+        if (isNaN(val) || val < 0) {
             throw new ApiError(400, "Max participants must be a valid number greater than 0.");
-        }
-    }
-    if (participantsCount !== undefined) {
-        const val = Number(participantsCount);
-        if (isNaN(val) || val <= 0) {
-            throw new ApiError(400, "Participant`s count must be a valid number greater than 0.");
         }
     }
 
@@ -145,7 +139,6 @@ const createEvent = asyncHandler(async (req, res) => {
         expireAt: retentionPeriod,
         canUserCancel: canUserCancel,
         maxParticipants: maxParticipants,
-        participantsCount
         //mongoose handles this automatically for us
         //if frontend sends a value then it is used
         //if not then here it will be undefined but default value will be used

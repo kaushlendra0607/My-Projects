@@ -6,6 +6,9 @@ import LoginPage from './pages/LoginPage.jsx';
 import Header from './components/Header.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import HomePage from './pages/HomePage.jsx';
+import { Routes, Route } from 'react-router';
+import CreateEvent from './pages/CreateEvent.jsx';
+import EventDetails from './pages/EventDetails.jsx';
 
 function App() {
   // 1. Optimization: Use a function inside useState
@@ -39,15 +42,6 @@ function App() {
     setTheme((prev) => prev === "dark" ? "light" : "dark");
   }
 
-  // useEffect(() => {
-  //   // 2. Sync Logic: Update LocalStorage whenever token changes
-  //   if (token) {
-  //     localStorage.setItem('token', token);
-  //   } else {
-  //     localStorage.removeItem('token'); // Clear it if user logs out
-  //   }
-  // }, [token]);
-
   if (loading) return <div>Please Wait...</div>
 
   return (
@@ -69,7 +63,11 @@ function App() {
       {user ? (
         <div>
           <Header toggleTheme={toggleTheme} theme={theme} />
-          <HomePage />
+          <Routes>
+            <Route index element={<HomePage />} />
+            <Route path='/create-event' element={<CreateEvent />} />
+            <Route path='/event/:id' element={<EventDetails />} />
+          </Routes>
         </div>
       ) : (
         <LoginPage toggleTheme={toggleTheme} theme={theme} />

@@ -1,0 +1,199 @@
+/* --- LAYOUT CONTAINER --- */
+.container {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2.5rem;
+    background-color: var(--bg-secondary, #ffffff);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color, #e5e7eb);
+    animation: slideUp 0.4s ease-out;
+}
+
+.heading {
+    font-size: 3rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--text-primary, #111827);
+    margin-bottom: 2rem;
+    letter-spacing: -0.02em;
+}
+
+/* --- FORM STRUCTURE --- */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Label Styling */
+.label {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-secondary, #2e333a);
+}
+
+/* --- INPUTS & TEXTAREAS --- */
+.input,
+.textarea,
+.selectInput,
+.fileInput {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    border: 2px solid var(--border-color, #e5e7eb);
+    background-color: var(--bg-primary, #f9fafb);
+    color: var(--text-primary, #1f2937);
+    font-size: 1.7rem;
+    transition: all 0.2s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+/* Focus States */
+.input:focus,
+.textarea:focus,
+.selectInput:focus {
+    border-color: var(--accent-color, #2563eb);
+    background-color: var(--bg-secondary, rgb(156, 156, 156));
+    color: var(--text-secondary,rgb(12, 12, 12));
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Textarea resize */
+.textarea {
+    resize: vertical;
+    /* Allow user to pull down, but not sideways */
+    min-height: 100px;
+}
+
+/* File Input Customization */
+.fileInput {
+    padding: 0.6rem;
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+}
+
+.fileInput::file-selector-button {
+    margin-right: 1rem;
+    background-color: var(--bg-primary, #e5e7eb);
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    color: var(--text-primary, #374151);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.fileInput::file-selector-button:hover {
+    background-color: var(--border-color, #d1d5db);
+}
+
+/* --- GRID SYSTEM (Rows & Columns) --- */
+.row {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.col {
+    flex: 1;
+    /* Each column takes equal space */
+}
+
+/* --- RADIO GROUP (Yes/No) --- */
+.formGroup {
+    margin-top: 0.8rem;
+}
+
+.radioGroup {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
+}
+
+.radioOption {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.6rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: background 0.2s;
+}
+
+.radioOption:hover {
+    background-color: var(--bg-primary, #f3f4f6);
+}
+
+.radioOption input[type="radio"] {
+    accent-color: var(--accent-color, #2563eb);
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+.radioOption label {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* --- SUBMIT BUTTON --- */
+.postBtn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.7rem;
+    background-color: var(--accent-color, #2563eb);
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.postBtn:hover {
+    background-color: var(--accent-hover, #1d4ed8);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+}
+
+.postBtn:active {
+    transform: translateY(0);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+    .container {
+        padding: 1.5rem;
+        margin: 1rem;
+        width: auto;
+    }
+
+    .heading {
+        font-size: 1.5rem;
+    }
+
+    /* Stack columns vertically on mobile */
+    .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
