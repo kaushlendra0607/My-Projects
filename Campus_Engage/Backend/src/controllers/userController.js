@@ -277,7 +277,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         // We send the new Access Token in JSON, and the new Refresh Token in the Cookie
         const options = {
             httpOnly: true,
-            secure: true
+            secure: process.env.NODE_ENV === "production"
         };
 
         return res

@@ -5,6 +5,7 @@ import './App.css'
 import LoginPage from './pages/LoginPage.jsx';
 import Header from './components/Header.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 function App() {
   // 1. Optimization: Use a function inside useState
@@ -68,8 +69,7 @@ function App() {
       {user ? (
         <div>
           <Header toggleTheme={toggleTheme} theme={theme} />
-          <main className='flex flex-col items-center justify-center min-h-screen'>
-          </main>
+          <HomePage />
         </div>
       ) : (
         <LoginPage toggleTheme={toggleTheme} theme={theme} />

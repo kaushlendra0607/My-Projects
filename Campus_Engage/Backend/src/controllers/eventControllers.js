@@ -23,17 +23,20 @@ const createEvent = asyncHandler(async (req, res) => {
         eventName,
         description,
         venue,
-        eventCategory,
         eventStartDateTime,
         eventEndDateTime,
         registrationOpenDate,
         registrationCloseDate,
         canUserCancel,
         maxParticipants,
-        participantsCount
+        participantsCount,
+        eventCategory: rawCategory // 1. Extract it here with an alias
     } = req.body;
-    if (eventCategory) {
-        eventCategory = eventCategory.toUpperCase();
+
+    // 2. Process it safely
+    let eventCategory;
+    if (rawCategory) {
+        eventCategory = String(rawCategory).trim().toUpperCase();
     }
     if (!EVENT_CATEGORIES.includes(eventCategory)) {
         throw new ApiError(401, `Invalid Category! Allowed values are: ${EVENT_CATEGORIES.join(", ")}`);
@@ -187,106 +190,118 @@ const getAllEvents = asyncHandler(async (req, res) => {
         limit = 10,
         query,
         category,
-        status: rawStatus = "UPCOMING" // Default to UPCOMING if nothing sent
+        minFee,
+        maxFee,
+        status: rawStatus = "UPCOMING"
     } = req.query;
-    const status = rawStatus.toUpperCase();
 
-    const matchStage = { isDeleted: false };
+    const status = rawStatus ? rawStatus.toUpperCase() : "UPCOMING";
+
+    // 1. Initialize Match Stage
+    const matchStage = {};
     const now = new Date();
+    let sortStage = { eventStartDateTime: 1 };
 
-    // Dynamic Sort Options
-    let sortStage = { eventStartDateTime: 1 }; // Default: Ascending (soonest first)
-
-    // --- 1. BUILD MATCH STAGE BASED ON STATUS ---
-    // This replaces the old 'show' logic completely
+    // --- 2. BUILD MATCH STAGE ---
     switch (status) {
         case 'UPCOMING':
-            matchStage.eventStartDateTime = { $gt: now };
-            matchStage.isCancelled = false;
-            sortStage = { eventStartDateTime: 1 }; // Show soonest upcoming first
+            matchStage.eventStartDateTime = { $gt: now }; // Future Only
+            matchStage.isCancelled = { $ne: true };       // Active Only
+            matchStage.isDeleted = { $ne: true };         // Not Deleted
+            sortStage = { eventStartDateTime: 1 };
             break;
 
         case 'ONGOING':
-            matchStage.eventStartDateTime = { $lte: now }; // Started in past
-            matchStage.eventEndDateTime = { $gte: now };   // Ends in future
-            matchStage.isCancelled = false;
-            sortStage = { eventEndDateTime: 1 }; // Show those ending soonest first
+            matchStage.eventStartDateTime = { $lte: now }; // Started
+            matchStage.eventEndDateTime = { $gte: now };   // Not ended
+            matchStage.isCancelled = { $ne: true };
+            matchStage.isDeleted = { $ne: true };
+            sortStage = { eventEndDateTime: 1 };
             break;
 
         case 'COMPLETED':
-            matchStage.eventEndDateTime = { $lt: now };
-            matchStage.isCancelled = false;
-            sortStage = { eventEndDateTime: -1 }; // Show most recently finished first
+            matchStage.eventEndDateTime = { $lt: now };    // Ended
+            matchStage.isCancelled = { $ne: true };
+            matchStage.isDeleted = { $ne: true };
+            sortStage = { eventEndDateTime: -1 };
             break;
 
         case 'CANCELLED':
-            matchStage.isCancelled = true;
-            sortStage = { updatedAt: -1 }; // Show most recently cancelled first
+            matchStage.isCancelled = true;                 // Explicitly Cancelled
+            matchStage.isDeleted = { $ne: true };
+            sortStage = { updatedAt: -1 };
+            break;
+
+        case 'DELETED':
+            matchStage.isDeleted = true;                   // Explicitly Deleted
+            sortStage = { updatedAt: -1 };
+            break;
+
+        case 'ALL':
+            // Show Everything (Past, Future, Ongoing) EXCEPT Deleted
+            matchStage.isDeleted = { $ne: true };
+            // Note: We do NOT filter by date here, so it shows everything history.
+            // sortStage = { eventStartDateTime: -1 }; // Newest first
+            sortStage = { createdAt: -1 }; // Newest first
             break;
 
         default:
-            // Fallback: If someone sends invalid status, decide what to show.
-            // Safe bet: Show all non-cancelled, non-deleted events?
-            // Or just default to UPCOMING logic above.
-            matchStage.isCancelled = false;
+            // Fallback: Show Upcoming
+            matchStage.eventStartDateTime = { $gt: now };
+            matchStage.isCancelled = { $ne: true };
+            matchStage.isDeleted = { $ne: true };
+            sortStage = { eventStartDateTime: 1 };
             break;
     }
 
-    // --- 2. SEARCH FILTERS ---
+    // --- 3. SEARCH & CATEGORY ---
     if (query) {
         matchStage.eventName = { $regex: query, $options: "i" };
     }
 
     if (category) {
-        matchStage.eventCategory = { $regex: `^${category}$`, $options: "i" };
+        const cleanCat = String(category).trim().toUpperCase();
+        matchStage.eventCategory = { $regex: `^${cleanCat}$`, $options: "i" };
     }
 
-    // --- 3. AGGREGATION PIPELINE ---
-    const events = await eventModel.aggregate([
-        // A. Filter first (Efficiency)
-        { $match: matchStage },
+    // --- 4. FEE FILTER ---
+    if (minFee || maxFee) {
+        matchStage.registrationFee = {};
+        if (minFee) matchStage.registrationFee.$gte = Number(minFee);
+        if (maxFee) matchStage.registrationFee.$lte = Number(maxFee);
+    }
 
-        // B. Lookup Registrations (The "Costly" part, but fine for 10k users)
+    // --- 5. RUN PIPELINE ---
+    const events = await eventModel.aggregate([
+        { $match: matchStage },
+        // ... Lookup logic ...
         {
             $lookup: {
-                from: "registers",       // Ensure this matches your collection name exactly in MongoDB
+                from: "registers",
                 localField: "_id",
                 foreignField: "event",
                 as: "registrations"
             }
         },
-
-        // C. Calculate Counts & isFull
         {
             $addFields: {
                 participantsCount: { $size: "$registrations" },
                 isFull: {
                     $cond: {
-                        if: { $eq: ["$maxParticipants", 0] }, // If 0, Unlimited
+                        if: { $eq: ["$maxParticipants", 0] },
                         then: false,
-                        else: {
-                            $gte: [{ $size: "$registrations" }, "$maxParticipants"]
-                        }
+                        else: { $gte: [{ $size: "$registrations" }, "$maxParticipants"] }
                     }
                 }
             }
         },
-
-        // D. Cleanup (Remove heavy registration array)
-        {
-            $project: {
-                registrations: 0
-            }
-        },
-
-        // E. Sort & Pagination
+        { $project: { registrations: 0 } },
+        // ... End Lookup ...
         { $sort: sortStage },
         { $skip: (parseInt(page) - 1) * parseInt(limit) },
         { $limit: parseInt(limit) }
     ]);
 
-    // --- 4. COUNT TOTAL (For Frontend Pagination) ---
-    // We count based on the *Filter*, not the pipeline result
     const totalEvents = await eventModel.countDocuments(matchStage);
 
     return res.status(200).json(
@@ -722,9 +737,9 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
     // 1. Find the Pending Payment Document
     // We use razorpay_order_id to find the exact transaction we created earlier
-    const tempPayment = await paymentModel.findOne({ 
-        razorpay_order_id: razorpay_order_id, 
-        userId: userId 
+    const tempPayment = await paymentModel.findOne({
+        razorpay_order_id: razorpay_order_id,
+        userId: userId
     });
 
     if (!tempPayment) {
@@ -768,8 +783,8 @@ const verifyPayment = asyncHandler(async (req, res) => {
         paymentStatus: "CONFIRMED",
         attendanceStatus: "ABSENT"
     });
-    if(!registration){
-        throw new ApiError(500,"Something went wrong while registering. Contact admin to fix issue if payment has been deducted.");
+    if (!registration) {
+        throw new ApiError(500, "Something went wrong while registering. Contact admin to fix issue if payment has been deducted.");
     }
 
     // 6. Update Event Stats (Increment Participants)

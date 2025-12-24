@@ -1,0 +1,355 @@
+/* --- MAIN LAYOUT --- */
+.homePage {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: 80vh;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* --- CONTROL PANEL (Search & Filters) --- */
+.controlPanel {
+    background-color: var(--bg-secondary, #ffffff);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    margin-bottom: 3rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.panelHead {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary, #1f2937);
+    letter-spacing: -0.02em;
+}
+
+/* Flex Container for Search Bar + Status Dropdown */
+.searchStatus {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    /* Stacks on mobile */
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+/* 1. Search Bar Area */
+.search {
+    flex: 1;
+    /* Takes up remaining space */
+    min-width: 300px;
+}
+
+.search input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    border: 2px solid var(--border-color, #e5e7eb);
+    background-color: var(--bg-primary, #f9fafb);
+    color: var(--text-primary, #1f2937);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.search input:focus {
+    border-color: var(--accent-color, #2563eb);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* 2. Status Dropdown Area */
+.statusDrop {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 200px;
+    font-size: 1.2rem;
+}
+
+.statusDrop select {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 2px solid var(--border-color, #e5e7eb);
+    background-color: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #374151);
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.statusDrop select:hover {
+    border-color: var(--text-secondary, #9ca3af);
+}
+
+/* 3. Category Pills Container */
+.category {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+/* Pill Buttons */
+.activeCat,
+.inActiveCat {
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    /* Fully rounded pills */
+    font-size: 1.4rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.activeCat {
+    background-color: var(--text-primary, #111827);
+    /* Dark/Black for active */
+    color: var(--bg-primary, #ffffff);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.show {
+    font-size: 1.5rem;
+}
+
+.inActiveCat {
+    background-color: var(--bg-primary, #f3f4f6);
+    color: var(--text-secondary, #4b5563);
+    border: 1px solid #4b5563;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.inActiveCat:hover {
+    background-color: var(--border-color, #e5e7eb);
+    color: var(--text-primary, #1f2937);
+}
+
+/* --- LOADING & EMPTY STATES --- */
+.load,
+.noEvent {
+    text-align: center;
+    align-items: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary, #6b7280);
+    font-size: 2rem;
+}
+
+.noFound {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary, #1f2937);
+    margin-bottom: 0.5rem;
+}
+
+/* --- EVENTS GRID (Responsive) --- */
+.eventDiv {
+    display: grid;
+    /* Smart grid: Minimum 340px width per card, otherwise stretch */
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+}
+
+/* --- EVENT CARD COMPONENT --- */
+.eventCard {
+    background-color: var(--bg-secondary, #ffffff);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color, #e5e7eb);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* Ensures all cards in a row are equal height */
+}
+
+.eventCard:hover {
+    transform: translateY(-8px);
+    /* Lift effect */
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Cover Image Area */
+.cover {
+    height: 220px;
+    /* Taller image */
+    width: 100%;
+    position: relative;
+    background-color: var(--bg-primary, #e5e7eb);
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.eventCard:hover .image {
+    transform: scale(1.05);
+    /* Subtle zoom on hover */
+}
+
+/* Category Badge on Image */
+.cardCat {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: var(--bg-secondary);
+    backdrop-filter: blur(4px);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #2563eb);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Details Section */
+.details {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    /* Pushes button to bottom */
+}
+.dropText{
+    font-size: 1.2rem;
+}
+.title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    /* Limit title to 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: inherit;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.eventDate {
+    font-size: 1.2rem;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+/* Fee & Button Row */
+.feeDetails {
+    margin-top: auto;
+    /* Pushes this row to the bottom of the card */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #f3f4f6);
+}
+
+.fee {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--success-color, #04bb81);
+    /* Green for Money/Free */
+}
+
+.view {
+    padding: 0.6rem 1.2rem;
+    background-color: var(--bg-primary, #f3f4f6);
+    color: var(--accent-color, #2563eb);
+    font-weight: 600;
+    font-size: 1.4rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view:hover {
+    background-color: var(--accent-color, #2563eb);
+    color: white;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 3rem;
+    padding-bottom: 2rem;
+}
+
+.pageInfo {
+    font-size: 1.4rem;
+}
+
+.pageBtn {
+    padding: 0.8rem 1.5rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-size: larger;
+}
+
+/* Specific style for Disabled state */
+.pageBtn:disabled {
+    background-color: var(--bg-secondary);
+    /* Light gray background */
+    color: var(--text-secondary);
+    /* 👈 Light gray text (Visible, but looks "off") */
+    cursor: not-allowed;
+    border-color: dotted 1px #e5e7eb;
+    opacity: 0.5;
+}
+
+.pageBtn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: var(--accent-color);
+    color: var(--text-primary);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- RESPONSIVE ADJUSTMENTS --- */
+@media (max-width: 768px) {
+    .homePage {
+        padding: 1rem;
+    }
+
+    .controlPanel {
+        padding: 1.5rem;
+    }
+
+    .panelHead {
+        font-size: 2rem;
+    }
+
+    .searchStatus {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
