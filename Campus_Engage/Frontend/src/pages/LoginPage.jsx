@@ -6,8 +6,10 @@ import './login.css';
 import { useAuth } from '../context/AuthContext';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from '../utils/crop.js';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = ({ toggleTheme, theme }) => {
+  const navigate = useNavigate();
   const { login } = useAuth();
   // Toggle State: "Login" or "Sign Up"
   const [currentState, setCurrentState] = useState("Login");
@@ -136,6 +138,8 @@ const LoginPage = ({ toggleTheme, theme }) => {
 
       toast.error(errorMessage);
     } finally {
+      // 2. CRITICAL: Explicitly move away from /login
+      navigate('/', { replace: true });
       setIsLoading(false);
     }
   }

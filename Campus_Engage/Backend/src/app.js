@@ -10,7 +10,7 @@ import paymentRouter from "./routes/paymentRouter.js";
 const app = express();
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN1 || 'http://localhost:3000',
     credentials: true
 }));
 
